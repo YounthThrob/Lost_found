@@ -1,0 +1,70 @@
+# ===== OS =====
+.DS_Store
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# ===== IDE / editors =====
+.idea/
+.vscode/
+*.iml
+*.swp
+*.swo
+*~
+
+# ===== Java (Spring Boot / Maven / Gradle) =====
+backend-java/target/
+target/
+*.class
+*.jar
+*.war
+*.log
+.mvn/wrapper/maven-wrapper.jar
+.gradle/
+build/
+
+# ===== Python =====
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+.eggs/
+.venv/
+venv/
+env/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+.coverage.*
+htmlcov/
+.coveralls.yml
+dist/
+sdist/
+*.so
+
+# ===== Node (admin-web / miniapp tooling) =====
+node_modules/
+dist/
+.next/
+.nuxt/
+.vite/
+.eslintcache
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# ===== Env / secrets =====
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+
+# ===== Logs / runtime =====
+logs/
+*.log
+
+# ===== OpenSpec local working views (purely local, not shared) =====
+openspec/worksets/
