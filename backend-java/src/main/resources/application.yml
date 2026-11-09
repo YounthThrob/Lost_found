@@ -1,0 +1,17 @@
+server:
+  port: 8080
+
+spring:
+  application:
+    name: backend-java
+
+# 微信登录配置。生产环境通过环境变量覆盖，密钥不进版本库。
+wechat:
+  mock: ${WECHAT_MOCK:true}
+  appid: ${WECHAT_APPID:}
+  secret: ${WECHAT_SECRET:}
+
+# JWT 会话配置。HS256 要求密钥长度 >= 32 字节。
+jwt:
+  secret: ${JWT_SECRET:dev-only-secret-key-please-change-0123456789}
+  ttl-seconds: ${JWT_TTL_SECONDS:7200}

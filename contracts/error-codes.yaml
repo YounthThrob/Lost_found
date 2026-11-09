@@ -1,0 +1,13 @@
+# 业务错误码表（共同事实源）
+# Java 与 Python 两个后端必须返回一致的错误码、HTTP 状态码与语义。
+# 核心错误码见 PRODUCT.md §11.2，本文件为可机读定义。
+error-codes:
+  SESSION_EXPIRED:
+    http_status: 401
+    message: 会话已过期，请重新登录
+  WECHAT_CODE_INVALID:
+    http_status: 401
+    message: 微信登录凭证无效或已过期
+  INTERNAL_ERROR:
+    http_status: 500
+    message: 服务内部错误

@@ -1,0 +1,128 @@
+openapi: 3.1.0
+info:
+  title: 校园失物招领互助平台 API
+  version: 0.1.0
+  description: 非官方校园失物招领互助平台。Java 与 Python 两个后端必须共同实现本契约。
+servers:
+  - url: /api/v1
+paths:
+  /session/wechat:
+    post:
+      summary: 微信登录或刷新平台会话
+      operationId: wechatLogin
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - code
+              properties:
+                code:
+                  type: string
+                  description: wx.login 获取的临时登录凭证
+      responses:
+        "200":
+          description: 登录成功，返回会话凭证
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LoginResponse"
+        "401":
+          description: 微信 code 无效或已过期
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  /me:
+    get:
+      summary: 查询当前用户
+      operationId: getMe
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: 当前用户信息
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MeResponse"
+        "401":
+          description: 会话无效或已过期
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  schemas:
+    LoginResponse:
+      type: object
+      required:
+        - data
+        - requestId
+        - timestamp
+      properties:
+        data:
+          type: object
+          required:
+            - token
+          properties:
+            token:
+              type: string
+        requestId:
+          type: string
+        timestamp:
+          type: string
+          format: date-time
+    MeResponse:
+      type: object
+      required:
+        - data
+        - requestId
+        - timestamp
+      properties:
+        data:
+          type: object
+          required:
+            - id
+            - status
+          properties:
+            id:
+              type: string
+            status:
+              type: string
+        requestId:
+          type: string
+        timestamp:
+          type: string
+          format: date-time
+    ErrorResponse:
+      type: object
+      required:
+        - error
+        - requestId
+        - timestamp
+      properties:
+        error:
+          type: object
+          required:
+            - code
+            - message
+          properties:
+            code:
+              type: string
+            message:
+              type: string
+            details:
+              type: object
+        requestId:
+          type: string
+        timestamp:
+          type: string
+          format: date-time
