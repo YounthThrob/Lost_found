@@ -6,6 +6,9 @@ import org.springframework.stereotype.Service;
 @Service
 public class AccountService {
 
+    public record LoginResult(String token, boolean agreementAccepted) {
+    }
+
     private final WechatClient wechatClient;
     private final InMemoryUserStore userStore;
     private final JwtService jwtService;
@@ -16,13 +19,17 @@ public class AccountService {
         this.jwtService = jwtService;
     }
 
-    public String login(String code) {
+    public LoginResult login(String code) {
         String openid = wechatClient.code2sessionOpenid(code);
         UserAccount user = userStore.findByOpenid(openid);
-        return jwtService.issue(user.id());
+        return new LoginResult(jwtService.issue(user.id()), user.agreementAccepted());
     }
 
     public UserAccount currentUser(String userId) {
         return userStore.findById(userId);
+    }
+
+    public UserAccount confirmAgreement(String userId) {
+        return userStore.confirmAgreement(userId);
     }
 }

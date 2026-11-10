@@ -2,6 +2,7 @@ package com.lostfound.account;
 
 import org.springframework.stereotype.Component;
 
+import java.time.Instant;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
@@ -17,7 +18,7 @@ public class InMemoryUserStore {
 
     public UserAccount findByOpenid(String openid) {
         return byOpenid.computeIfAbsent(openid,
-            o -> new UserAccount(UUID.randomUUID().toString(), o, "ACTIVE"));
+            o -> new UserAccount(UUID.randomUUID().toString(), o, "ACTIVE", null));
     }
 
     public UserAccount findById(String id) {
@@ -25,5 +26,24 @@ public class InMemoryUserStore {
             .filter(u -> u.id().equals(id))
             .findFirst()
             .orElse(null);
+    }
+
+    public UserAccount confirmAgreement(String userId) {
+        UserAccount user = findById(userId);
+        if (user == null) {
+            return null;
+        }
+        if (user.agreementAccepted()) {
+            return user;
+        }
+        UserAccount updated = new UserAccount(user.id(), user.openid(), user.status(),
+            Instant.now().toString());
+        byOpenid.put(user.openid(), updated);
+        return updated;
+    }
+
+    /** 仅供测试重置状态。 */
+    public void clear() {
+        byOpenid.clear();
     }
 }

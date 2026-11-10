@@ -54,6 +54,25 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
+  /me/agreement:
+    post:
+      summary: 确认用户协议与非官方风险提示
+      operationId: confirmAgreement
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: 确认成功
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AgreementResponse"
+        "401":
+          description: 会话无效或已过期
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
 components:
   securitySchemes:
     bearerAuth:
@@ -72,9 +91,12 @@ components:
           type: object
           required:
             - token
+            - agreementAccepted
           properties:
             token:
               type: string
+            agreementAccepted:
+              type: boolean
         requestId:
           type: string
         timestamp:
@@ -92,11 +114,33 @@ components:
           required:
             - id
             - status
+            - agreementAccepted
           properties:
             id:
               type: string
             status:
               type: string
+            agreementAccepted:
+              type: boolean
+        requestId:
+          type: string
+        timestamp:
+          type: string
+          format: date-time
+    AgreementResponse:
+      type: object
+      required:
+        - data
+        - requestId
+        - timestamp
+      properties:
+        data:
+          type: object
+          required:
+            - agreementAccepted
+          properties:
+            agreementAccepted:
+              type: boolean
         requestId:
           type: string
         timestamp:

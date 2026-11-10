@@ -1,5 +1,10 @@
 from dataclasses import dataclass
+from datetime import datetime, timezone
 from uuid import uuid4
+
+
+def _now() -> str:
+    return datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
 
 
 @dataclass
@@ -7,6 +12,11 @@ class UserAccount:
     id: str
     openid: str
     status: str
+    agreement_accepted_at: str | None = None
+
+    @property
+    def agreement_accepted(self) -> bool:
+        return self.agreement_accepted_at is not None
 
 
 class InMemoryUserStore:
@@ -27,3 +37,18 @@ class InMemoryUserStore:
             if user.id == user_id:
                 return user
         return None
+
+    def confirm_agreement(self, user_id: str) -> UserAccount | None:
+        user = self.find_by_id(user_id)
+        if user is None:
+            return None
+        if user.agreement_accepted:
+            return user
+        updated = UserAccount(
+            id=user.id,
+            openid=user.openid,
+            status=user.status,
+            agreement_accepted_at=_now(),
+        )
+        self._by_openid[user.openid] = updated
+        return updated

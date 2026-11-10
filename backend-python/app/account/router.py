@@ -14,11 +14,17 @@ class LoginRequest(BaseModel):
 
 @router.post("/session/wechat")
 def login(request: LoginRequest):
-    token = service.login(request.code)
-    return envelope({"token": token})
+    token, agreement_accepted = service.login(request.code)
+    return envelope({"token": token, "agreementAccepted": agreement_accepted})
 
 
 @router.get("/me")
 def me(user_id: str = Depends(get_current_user)):
     user = service.current_user(user_id)
-    return envelope({"id": user.id, "status": user.status})
+    return envelope({"id": user.id, "status": user.status, "agreementAccepted": user.agreement_accepted})
+
+
+@router.post("/me/agreement")
+def confirm_agreement(user_id: str = Depends(get_current_user)):
+    service.confirm_agreement(user_id)
+    return envelope({"agreementAccepted": True})

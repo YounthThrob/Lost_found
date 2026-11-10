@@ -25,13 +25,24 @@ public class AccountController {
 
     @PostMapping("/session/wechat")
     public Envelope.Response<Map<String, Object>> login(@RequestBody LoginRequest request) {
-        String token = accountService.login(request.code());
-        return Envelope.ok(Map.of("token", token));
+        AccountService.LoginResult result = accountService.login(request.code());
+        return Envelope.ok(Map.of(
+            "token", result.token(),
+            "agreementAccepted", result.agreementAccepted()));
     }
 
     @GetMapping("/me")
     public Envelope.Response<Map<String, Object>> me(Authentication authentication) {
         UserAccount user = accountService.currentUser(authentication.getName());
-        return Envelope.ok(Map.of("id", user.id(), "status", user.status()));
+        return Envelope.ok(Map.of(
+            "id", user.id(),
+            "status", user.status(),
+            "agreementAccepted", user.agreementAccepted()));
+    }
+
+    @PostMapping("/me/agreement")
+    public Envelope.Response<Map<String, Object>> confirmAgreement(Authentication authentication) {
+        accountService.confirmAgreement(authentication.getName());
+        return Envelope.ok(Map.of("agreementAccepted", true));
     }
 }

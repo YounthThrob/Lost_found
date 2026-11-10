@@ -18,6 +18,7 @@ class ErrorCode:
 # 必须与 contracts/error-codes.yaml 保持一致。
 SESSION_EXPIRED = ErrorCode("SESSION_EXPIRED", 401, "会话已过期，请重新登录")
 WECHAT_CODE_INVALID = ErrorCode("WECHAT_CODE_INVALID", 401, "微信登录凭证无效或已过期")
+AGREEMENT_NOT_ACCEPTED = ErrorCode("AGREEMENT_NOT_ACCEPTED", 403, "未确认用户协议，禁止发布/留言/认领")
 INTERNAL_ERROR = ErrorCode("INTERNAL_ERROR", 500, "服务内部错误")
 
 

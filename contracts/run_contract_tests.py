@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """共享黑盒契约测试。
 
-对 Java 与 Python 两个后端运行同一组登录/会话用例，断言二者行为一致，
+对 Java 与 Python 两个后端运行同一组登录/会话/协议确认用例，断言二者行为一致，
 且符合 openapi/product-api.yaml 与 contracts/error-codes.yaml 的约定。
 
 用法（在仓库根目录，用 backend-python/.venv 的 Python 运行）：
@@ -26,13 +26,16 @@ EXPECTED = {
     "login_success": {
         "status": 200,
         "has_token": True,
+        "agreement_accepted": False,
         "leaks_openid": False,
         "leaks_session_key": False,
         "keys": ["data", "requestId", "timestamp"],
     },
     "login_invalid": {"status": 401, "error_code": "WECHAT_CODE_INVALID"},
     "me_no_auth": {"status": 401, "error_code": "SESSION_EXPIRED"},
-    "me_valid": {"status": 200, "has_id": True, "user_status": "ACTIVE"},
+    "me_valid": {"status": 200, "has_id": True, "user_status": "ACTIVE", "agreement_accepted": False},
+    "confirm_agreement": {"status": 200, "agreement_accepted": True},
+    "me_after_agreement": {"status": 200, "agreement_accepted": True},
 }
 
 
@@ -42,11 +45,13 @@ def probe(base: str) -> dict:
     sig["login_success"] = {
         "status": r.status_code,
         "has_token": bool(r.json().get("data", {}).get("token")),
+        "agreement_accepted": r.json().get("data", {}).get("agreementAccepted"),
         "leaks_openid": "openid" in r.text,
         "leaks_session_key": "session_key" in r.text,
         "keys": sorted(r.json().keys()),
     }
     token = r.json()["data"]["token"]
+    headers = {"Authorization": "Bearer " + token}
 
     r2 = httpx.post(base + "/api/v1/session/wechat", json={"code": "bad-code"})
     sig["login_invalid"] = {
@@ -60,11 +65,24 @@ def probe(base: str) -> dict:
         "error_code": r3.json().get("error", {}).get("code"),
     }
 
-    r4 = httpx.get(base + "/api/v1/me", headers={"Authorization": "Bearer " + token})
+    r4 = httpx.get(base + "/api/v1/me", headers=headers)
     sig["me_valid"] = {
         "status": r4.status_code,
         "has_id": bool(r4.json().get("data", {}).get("id")),
         "user_status": r4.json().get("data", {}).get("status"),
+        "agreement_accepted": r4.json().get("data", {}).get("agreementAccepted"),
+    }
+
+    r5 = httpx.post(base + "/api/v1/me/agreement", headers=headers)
+    sig["confirm_agreement"] = {
+        "status": r5.status_code,
+        "agreement_accepted": r5.json().get("data", {}).get("agreementAccepted"),
+    }
+
+    r6 = httpx.get(base + "/api/v1/me", headers=headers)
+    sig["me_after_agreement"] = {
+        "status": r6.status_code,
+        "agreement_accepted": r6.json().get("data", {}).get("agreementAccepted"),
     }
     return sig
 
