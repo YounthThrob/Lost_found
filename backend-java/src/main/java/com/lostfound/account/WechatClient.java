@@ -30,6 +30,9 @@ public class WechatClient {
             if ("valid-code".equals(code)) {
                 return "openid_test_001";
             }
+            if ("valid-code-2".equals(code)) {
+                return "openid_test_002";
+            }
             throw new BusinessException(ErrorCode.WECHAT_CODE_INVALID);
         }
         return realCode2session(code);

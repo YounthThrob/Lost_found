@@ -1,0 +1,37 @@
+package com.lostfound.listing;
+
+import org.springframework.stereotype.Component;
+
+import java.util.Comparator;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+
+/** 内存信息存储。walking skeleton 阶段使用内存，后续 change 再引入 JPA 持久化。 */
+@Component
+public class ItemPostStore {
+
+    private final Map<String, ItemPost> byId = new ConcurrentHashMap<>();
+
+    public ItemPost findById(String id) {
+        return byId.get(id);
+    }
+
+    public void save(ItemPost post) {
+        byId.put(post.id(), post);
+    }
+
+    /** 仅返回已发布信息，按创建时间倒序。 */
+    public List<ItemPost> listPublished() {
+        return byId.values().stream()
+            .filter(p -> "PUBLISHED".equals(p.status()))
+            .sorted(Comparator.comparing(ItemPost::createdAt, Comparator.reverseOrder())
+                .thenComparing(ItemPost::id))
+            .toList();
+    }
+
+    /** 仅供测试重置状态。 */
+    public void clear() {
+        byId.clear();
+    }
+}

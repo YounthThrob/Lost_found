@@ -40,6 +40,29 @@ EXPECTED = {
     "campus_put": {"status": 200, "school": "南方大学", "campus": "东校区", "verification_status": "SELF_DECLARED"},
     "campus_get": {"status": 200, "school": "南方大学", "campus": "东校区"},
     "campus_invalid": {"status": 422, "error_code": "VALIDATION_FAILED"},
+    "listing_create_unconfirmed": {"status": 403, "error_code": "AGREEMENT_NOT_ACCEPTED"},
+    "listing_create": {"status": 200, "post_status": "DRAFT", "has_id": True},
+    "listing_search_draft_hidden": {"status": 200, "total": 0},
+    "listing_detail_draft_hidden": {"status": 404, "error_code": "NOT_FOUND"},
+    "listing_publish": {"status": 200, "post_status": "PUBLISHED"},
+    "listing_detail": {"status": 200, "post_status": "PUBLISHED"},
+    "listing_search_published": {"status": 200, "total": 1},
+    "listing_publish_again": {"status": 409, "error_code": "INVALID_STATE_TRANSITION"},
+    "listing_close": {"status": 200, "post_status": "CLOSED"},
+    "listing_search_closed_hidden": {"status": 200, "total": 0},
+    "listing_invalid_close": {"status": 409, "error_code": "INVALID_STATE_TRANSITION"},
+    "listing_not_found": {"status": 404, "error_code": "NOT_FOUND"},
+    "listing_empty_title": {"status": 422, "error_code": "VALIDATION_FAILED"},
+}
+
+
+POST_BODY = {
+    "type": "LOST",
+    "category": "校园卡",
+    "title": "遗失校园卡",
+    "publicDescription": "在图书馆附近遗失一张校园卡",
+    "school": "南方大学",
+    "campus": "东校区",
 }
 
 
@@ -116,6 +139,91 @@ def probe(base: str) -> dict:
     sig["campus_invalid"] = {
         "status": r10.status_code,
         "error_code": r10.json().get("error", {}).get("code"),
+    }
+
+    # ---- listing ----
+    token2 = httpx.post(base + "/api/v1/session/wechat", json={"code": "valid-code-2"}).json()["data"]["token"]
+    headers2 = {"Authorization": "Bearer " + token2}
+
+    r11 = httpx.post(base + "/api/v1/posts", headers=headers2, json=POST_BODY)
+    sig["listing_create_unconfirmed"] = {
+        "status": r11.status_code,
+        "error_code": r11.json().get("error", {}).get("code"),
+    }
+
+    r12 = httpx.post(base + "/api/v1/posts", headers=headers, json=POST_BODY)
+    sig["listing_create"] = {
+        "status": r12.status_code,
+        "post_status": r12.json().get("data", {}).get("status"),
+        "has_id": bool(r12.json().get("data", {}).get("id")),
+    }
+    post_id = r12.json()["data"]["id"]
+
+    r13 = httpx.get(base + "/api/v1/posts", headers=headers)
+    sig["listing_search_draft_hidden"] = {
+        "status": r13.status_code,
+        "total": r13.json().get("data", {}).get("pagination", {}).get("total"),
+    }
+
+    r14 = httpx.get(base + f"/api/v1/posts/{post_id}", headers=headers2)
+    sig["listing_detail_draft_hidden"] = {
+        "status": r14.status_code,
+        "error_code": r14.json().get("error", {}).get("code"),
+    }
+
+    r15 = httpx.post(base + f"/api/v1/posts/{post_id}/publish", headers=headers)
+    sig["listing_publish"] = {
+        "status": r15.status_code,
+        "post_status": r15.json().get("data", {}).get("status"),
+    }
+
+    r16 = httpx.get(base + f"/api/v1/posts/{post_id}", headers=headers2)
+    sig["listing_detail"] = {
+        "status": r16.status_code,
+        "post_status": r16.json().get("data", {}).get("status"),
+    }
+
+    r17 = httpx.get(base + "/api/v1/posts", headers=headers)
+    sig["listing_search_published"] = {
+        "status": r17.status_code,
+        "total": r17.json().get("data", {}).get("pagination", {}).get("total"),
+    }
+
+    r18 = httpx.post(base + f"/api/v1/posts/{post_id}/publish", headers=headers)
+    sig["listing_publish_again"] = {
+        "status": r18.status_code,
+        "error_code": r18.json().get("error", {}).get("code"),
+    }
+
+    r19 = httpx.post(base + f"/api/v1/posts/{post_id}/close", headers=headers)
+    sig["listing_close"] = {
+        "status": r19.status_code,
+        "post_status": r19.json().get("data", {}).get("status"),
+    }
+
+    r20 = httpx.get(base + "/api/v1/posts", headers=headers)
+    sig["listing_search_closed_hidden"] = {
+        "status": r20.status_code,
+        "total": r20.json().get("data", {}).get("pagination", {}).get("total"),
+    }
+
+    draft_id = httpx.post(base + "/api/v1/posts", headers=headers, json=POST_BODY).json()["data"]["id"]
+    r21 = httpx.post(base + f"/api/v1/posts/{draft_id}/close", headers=headers)
+    sig["listing_invalid_close"] = {
+        "status": r21.status_code,
+        "error_code": r21.json().get("error", {}).get("code"),
+    }
+
+    r22 = httpx.get(base + "/api/v1/posts/nonexistent-id", headers=headers)
+    sig["listing_not_found"] = {
+        "status": r22.status_code,
+        "error_code": r22.json().get("error", {}).get("code"),
+    }
+
+    r23 = httpx.post(base + "/api/v1/posts", headers=headers, json={**POST_BODY, "title": ""})
+    sig["listing_empty_title"] = {
+        "status": r23.status_code,
+        "error_code": r23.json().get("error", {}).get("code"),
     }
     return sig
 

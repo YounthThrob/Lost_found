@@ -11,6 +11,8 @@ def code2session_openid(code: str) -> str:
     if config.WECHAT_MOCK:
         if code == "valid-code":
             return "openid_test_001"
+        if code == "valid-code-2":
+            return "openid_test_002"
         raise BusinessError(WECHAT_CODE_INVALID)
     return _real_code2session(code)
 
