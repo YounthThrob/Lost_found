@@ -13,6 +13,8 @@ def code2session_openid(code: str) -> str:
             return "openid_test_001"
         if code == "valid-code-2":
             return "openid_test_002"
+        if code == "valid-code-3":
+            return "openid_test_003"
         raise BusinessError(WECHAT_CODE_INVALID)
     return _real_code2session(code)
 

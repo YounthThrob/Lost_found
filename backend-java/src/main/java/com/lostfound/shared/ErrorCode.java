@@ -8,6 +8,9 @@ public enum ErrorCode {
     VALIDATION_FAILED(422, "参数校验失败"),
     NOT_FOUND(404, "资源不存在或无权访问"),
     INVALID_STATE_TRANSITION(409, "非法状态迁移"),
+    CLAIM_DUPLICATE(409, "同一物品已存在进行中的申请"),
+    POST_NOT_CLAIMABLE(409, "信息当前不可申请认领"),
+    HANDOVER_CONFLICT(409, "已有申请进入待交接"),
     INTERNAL_ERROR(500, "服务内部错误");
 
     private final int httpStatus;

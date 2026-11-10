@@ -469,6 +469,223 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
+  /posts/{postId}/claims:
+    post:
+      summary: 提交认领申请
+      operationId: createClaim
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: postId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ClaimCreate"
+      responses:
+        "200":
+          description: 申请提交成功，status 为 SUBMITTED
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ClaimResponse"
+        "401":
+          description: 会话无效或已过期
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "403":
+          description: 未确认用户协议
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: 信息不存在或无权访问
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "409":
+          description: 信息不可认领或重复申请（POST_NOT_CLAIMABLE / CLAIM_DUPLICATE）
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "422":
+          description: 归属证明为空或超长
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+    get:
+      summary: 发布者查看收到的认领申请
+      operationId: listPostClaims
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: postId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: page
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+        - name: pageSize
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 20
+      responses:
+        "200":
+          description: 申请列表（分页）
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ClaimListResponse"
+        "401":
+          description: 会话无效或已过期
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: 信息不存在或无权访问
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "422":
+          description: 分页参数非法
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  /claims/{claimId}/request-info:
+    post:
+      summary: 请求补充信息
+      operationId: requestClaimInfo
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: claimId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: 申请状态迁移为 NEEDS_MORE_INFO
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ClaimResponse"
+        "401":
+          description: 会话无效或已过期
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: 申请不存在或无权访问
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "409":
+          description: 非法状态迁移（仅 SUBMITTED 可请求补充）
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  /claims/{claimId}/accept:
+    post:
+      summary: 接受认领申请
+      operationId: acceptClaim
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: claimId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: 申请状态迁移为 ACCEPTED
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ClaimResponse"
+        "401":
+          description: 会话无效或已过期
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: 申请不存在或无权访问
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "409":
+          description: 非法状态迁移或已有申请进入待交接（INVALID_STATE_TRANSITION / HANDOVER_CONFLICT）
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  /claims/{claimId}/reject:
+    post:
+      summary: 拒绝认领申请
+      operationId: rejectClaim
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: claimId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: 申请状态迁移为 REJECTED
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ClaimResponse"
+        "401":
+          description: 会话无效或已过期
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: 申请不存在或无权访问
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "409":
+          description: 非法状态迁移
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
 components:
   securitySchemes:
     bearerAuth:
@@ -666,7 +883,7 @@ components:
           type: ["string", "null"]
         status:
           type: string
-          enum: [DRAFT, PENDING_REVIEW, PUBLISHED, REJECTED, CLOSED]
+          enum: [DRAFT, PENDING_REVIEW, PUBLISHED, REJECTED, CLOSED, VERIFYING, PENDING_HANDOVER]
         authorId:
           type: string
         createdAt:
@@ -816,6 +1033,85 @@ components:
       properties:
         data:
           $ref: "#/components/schemas/ReportListData"
+        requestId:
+          type: string
+        timestamp:
+          type: string
+          format: date-time
+    ClaimCreate:
+      type: object
+      required:
+        - statement
+      properties:
+        statement:
+          type: string
+          description: 归属证明（非空，≤2000 字符），仅对申请人与发布者可见
+    ClaimView:
+      type: object
+      required:
+        - id
+        - postId
+        - applicantId
+        - statement
+        - status
+        - version
+        - createdAt
+        - updatedAt
+      properties:
+        id:
+          type: string
+        postId:
+          type: string
+        applicantId:
+          type: string
+        statement:
+          type: string
+        status:
+          type: string
+          enum: [SUBMITTED, NEEDS_MORE_INFO, ACCEPTED, REJECTED]
+        version:
+          type: integer
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+    ClaimListData:
+      type: object
+      required:
+        - items
+        - pagination
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/ClaimView"
+        pagination:
+          $ref: "#/components/schemas/Pagination"
+    ClaimResponse:
+      type: object
+      required:
+        - data
+        - requestId
+        - timestamp
+      properties:
+        data:
+          $ref: "#/components/schemas/ClaimView"
+        requestId:
+          type: string
+        timestamp:
+          type: string
+          format: date-time
+    ClaimListResponse:
+      type: object
+      required:
+        - data
+        - requestId
+        - timestamp
+      properties:
+        data:
+          $ref: "#/components/schemas/ClaimListData"
         requestId:
           type: string
         timestamp:

@@ -58,6 +58,17 @@ EXPECTED = {
     "report_create": {"status": 200, "report_status": "SUBMITTED", "has_id": True},
     "report_invalid_type": {"status": 422, "error_code": "VALIDATION_FAILED"},
     "report_me_list": {"status": 200, "total": 1},
+    "claim_submit": {"status": 200, "claim_status": "SUBMITTED"},
+    "claim_duplicate": {"status": 409, "error_code": "CLAIM_DUPLICATE"},
+    "claim_not_claimable": {"status": 409, "error_code": "POST_NOT_CLAIMABLE"},
+    "claim_list_owner": {"status": 200, "total": 1},
+    "claim_list_nonowner": {"status": 404, "error_code": "NOT_FOUND"},
+    "claim_request_info": {"status": 200, "claim_status": "NEEDS_MORE_INFO"},
+    "claim_accept": {"status": 200, "claim_status": "ACCEPTED"},
+    "claim_post_after_accept": {"status": 200, "post_status": "PENDING_HANDOVER"},
+    "claim_reject": {"status": 200, "claim_status": "REJECTED"},
+    "claim_post_after_reject": {"status": 200, "post_status": "PUBLISHED"},
+    "claim_handover_conflict": {"status": 409, "error_code": "HANDOVER_CONFLICT"},
 }
 
 
@@ -75,6 +86,14 @@ BANNED_BODY = {
     "category": "其他",
     "title": "高价回收",
     "publicDescription": "要求先转账到指定账户",
+    "school": "南方大学",
+}
+
+FOUND_BODY = {
+    "type": "FOUND",
+    "category": "校园卡",
+    "title": "拾到校园卡",
+    "publicDescription": "在食堂拾到一张校园卡",
     "school": "南方大学",
 }
 
@@ -272,6 +291,98 @@ def probe(base: str) -> dict:
     sig["report_me_list"] = {
         "status": r28.status_code,
         "total": r28.json().get("data", {}).get("pagination", {}).get("total"),
+    }
+
+    # ---- claim-verification ----
+    httpx.post(base + "/api/v1/me/agreement", headers=headers2)
+    token3 = httpx.post(base + "/api/v1/session/wechat", json={"code": "valid-code-3"}).json()["data"]["token"]
+    headers3 = {"Authorization": "Bearer " + token3}
+    httpx.post(base + "/api/v1/me/agreement", headers=headers3)
+
+    found_id = httpx.post(base + "/api/v1/posts", headers=headers, json=FOUND_BODY).json()["data"]["id"]
+    httpx.post(base + f"/api/v1/posts/{found_id}/publish", headers=headers)
+
+    r29 = httpx.post(base + f"/api/v1/posts/{found_id}/claims", headers=headers2,
+                     json={"statement": "我的校园卡，学号尾号 0427"})
+    sig["claim_submit"] = {
+        "status": r29.status_code,
+        "claim_status": r29.json().get("data", {}).get("status"),
+    }
+    claim_id = r29.json()["data"]["id"]
+
+    r30 = httpx.post(base + f"/api/v1/posts/{found_id}/claims", headers=headers2,
+                     json={"statement": "重复申请"})
+    sig["claim_duplicate"] = {
+        "status": r30.status_code,
+        "error_code": r30.json().get("error", {}).get("code"),
+    }
+
+    lost_id = httpx.post(base + "/api/v1/posts", headers=headers, json=POST_BODY).json()["data"]["id"]
+    httpx.post(base + f"/api/v1/posts/{lost_id}/publish", headers=headers)
+    r31 = httpx.post(base + f"/api/v1/posts/{lost_id}/claims", headers=headers2,
+                     json={"statement": "不该能认领寻物"})
+    sig["claim_not_claimable"] = {
+        "status": r31.status_code,
+        "error_code": r31.json().get("error", {}).get("code"),
+    }
+
+    r32 = httpx.get(base + f"/api/v1/posts/{found_id}/claims", headers=headers)
+    sig["claim_list_owner"] = {
+        "status": r32.status_code,
+        "total": r32.json().get("data", {}).get("pagination", {}).get("total"),
+    }
+
+    r33 = httpx.get(base + f"/api/v1/posts/{found_id}/claims", headers=headers2)
+    sig["claim_list_nonowner"] = {
+        "status": r33.status_code,
+        "error_code": r33.json().get("error", {}).get("code"),
+    }
+
+    r34 = httpx.post(base + f"/api/v1/claims/{claim_id}/request-info", headers=headers)
+    sig["claim_request_info"] = {
+        "status": r34.status_code,
+        "claim_status": r34.json().get("data", {}).get("status"),
+    }
+
+    r35 = httpx.post(base + f"/api/v1/claims/{claim_id}/accept", headers=headers)
+    sig["claim_accept"] = {
+        "status": r35.status_code,
+        "claim_status": r35.json().get("data", {}).get("status"),
+    }
+
+    r36 = httpx.get(base + f"/api/v1/posts/{found_id}", headers=headers)
+    sig["claim_post_after_accept"] = {
+        "status": r36.status_code,
+        "post_status": r36.json().get("data", {}).get("status"),
+    }
+
+    found2_id = httpx.post(base + "/api/v1/posts", headers=headers, json=FOUND_BODY).json()["data"]["id"]
+    httpx.post(base + f"/api/v1/posts/{found2_id}/publish", headers=headers)
+    claim2_id = httpx.post(base + f"/api/v1/posts/{found2_id}/claims", headers=headers3,
+                           json={"statement": "另一个申请"}).json()["data"]["id"]
+    r37 = httpx.post(base + f"/api/v1/claims/{claim2_id}/reject", headers=headers)
+    sig["claim_reject"] = {
+        "status": r37.status_code,
+        "claim_status": r37.json().get("data", {}).get("status"),
+    }
+
+    r38 = httpx.get(base + f"/api/v1/posts/{found2_id}", headers=headers)
+    sig["claim_post_after_reject"] = {
+        "status": r38.status_code,
+        "post_status": r38.json().get("data", {}).get("status"),
+    }
+
+    found3_id = httpx.post(base + "/api/v1/posts", headers=headers, json=FOUND_BODY).json()["data"]["id"]
+    httpx.post(base + f"/api/v1/posts/{found3_id}/publish", headers=headers)
+    claim_a = httpx.post(base + f"/api/v1/posts/{found3_id}/claims", headers=headers2,
+                         json={"statement": "申请人A"}).json()["data"]["id"]
+    claim_b = httpx.post(base + f"/api/v1/posts/{found3_id}/claims", headers=headers3,
+                         json={"statement": "申请人B"}).json()["data"]["id"]
+    httpx.post(base + f"/api/v1/claims/{claim_a}/accept", headers=headers)
+    r39 = httpx.post(base + f"/api/v1/claims/{claim_b}/accept", headers=headers)
+    sig["claim_handover_conflict"] = {
+        "status": r39.status_code,
+        "error_code": r39.json().get("error", {}).get("code"),
     }
     return sig
 

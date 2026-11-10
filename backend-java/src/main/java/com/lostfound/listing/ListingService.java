@@ -96,7 +96,7 @@ public class ListingService {
         if (post == null) {
             throw new BusinessException(ErrorCode.NOT_FOUND);
         }
-        if (!"PUBLISHED".equals(post.status()) && !post.authorId().equals(viewerId)) {
+        if (!isPublic(post.status()) && !post.authorId().equals(viewerId)) {
             throw new BusinessException(ErrorCode.NOT_FOUND);
         }
         return post;
@@ -107,7 +107,7 @@ public class ListingService {
         if (page < 1 || pageSize < 1 || pageSize > MAX_PAGE_SIZE) {
             throw new BusinessException(ErrorCode.VALIDATION_FAILED);
         }
-        List<ItemPost> all = store.listPublished().stream()
+        List<ItemPost> all = store.listVisible().stream()
             .filter(p -> matches(type, p.type()))
             .filter(p -> matches(category, p.category()))
             .filter(p -> matches(school, p.school()))
@@ -167,6 +167,10 @@ public class ListingService {
 
     private boolean matches(String filter, String value) {
         return filter == null || filter.isBlank() || filter.equals(value);
+    }
+
+    private boolean isPublic(String status) {
+        return "PUBLISHED".equals(status) || "VERIFYING".equals(status);
     }
 
     private ItemPost withStatus(ItemPost post, String status, String now) {

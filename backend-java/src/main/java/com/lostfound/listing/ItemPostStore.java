@@ -21,10 +21,10 @@ public class ItemPostStore {
         byId.put(post.id(), post);
     }
 
-    /** 仅返回已发布信息，按创建时间倒序。 */
-    public List<ItemPost> listPublished() {
+    /** 仅返回公开可见信息（PUBLISHED 或 VERIFYING），按创建时间倒序。 */
+    public List<ItemPost> listVisible() {
         return byId.values().stream()
-            .filter(p -> "PUBLISHED".equals(p.status()))
+            .filter(p -> "PUBLISHED".equals(p.status()) || "VERIFYING".equals(p.status()))
             .sorted(Comparator.comparing(ItemPost::createdAt, Comparator.reverseOrder())
                 .thenComparing(ItemPost::id))
             .toList();

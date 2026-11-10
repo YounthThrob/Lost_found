@@ -87,7 +87,7 @@ def get_detail(viewer_id: str, post_id: str) -> ItemPost:
     post = _store.find_by_id(post_id)
     if post is None:
         raise BusinessError(NOT_FOUND)
-    if post.status != "PUBLISHED" and post.author_id != viewer_id:
+    if post.status not in ("PUBLISHED", "VERIFYING") and post.author_id != viewer_id:
         raise BusinessError(NOT_FOUND)
     return post
 
@@ -98,7 +98,7 @@ def search(keyword: str | None, post_type: str | None, category: str | None,
         raise BusinessError(VALIDATION_FAILED)
     kw = keyword.strip().lower() if keyword else None
     posts = [
-        p for p in _store.list_published()
+        p for p in _store.list_visible()
         if _matches(post_type, p.type)
         and _matches(category, p.category)
         and _matches(school, p.school)

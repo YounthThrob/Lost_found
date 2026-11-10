@@ -34,8 +34,8 @@ class InMemoryItemPostStore:
     def save(self, post: ItemPost) -> None:
         self._by_id[post.id] = post
 
-    def list_published(self) -> list[ItemPost]:
-        posts = [p for p in self._by_id.values() if p.status == "PUBLISHED"]
+    def list_visible(self) -> list[ItemPost]:
+        posts = [p for p in self._by_id.values() if p.status in ("PUBLISHED", "VERIFYING")]
         posts.sort(key=lambda p: p.created_at, reverse=True)
         return posts
 
