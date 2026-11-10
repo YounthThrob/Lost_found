@@ -25,6 +25,7 @@ INVALID_STATE_TRANSITION = ErrorCode("INVALID_STATE_TRANSITION", 409, "非法状
 CLAIM_DUPLICATE = ErrorCode("CLAIM_DUPLICATE", 409, "同一物品已存在进行中的申请")
 POST_NOT_CLAIMABLE = ErrorCode("POST_NOT_CLAIMABLE", 409, "信息当前不可申请认领")
 HANDOVER_CONFLICT = ErrorCode("HANDOVER_CONFLICT", 409, "已有申请进入待交接")
+BLOCKED = ErrorCode("BLOCKED", 403, "已被对方拉黑，无法继续发送消息或申请")
 INTERNAL_ERROR = ErrorCode("INTERNAL_ERROR", 500, "服务内部错误")
 
 

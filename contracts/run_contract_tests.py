@@ -69,6 +69,21 @@ EXPECTED = {
     "claim_reject": {"status": 200, "claim_status": "REJECTED"},
     "claim_post_after_reject": {"status": 200, "post_status": "PUBLISHED"},
     "claim_handover_conflict": {"status": 409, "error_code": "HANDOVER_CONFLICT"},
+    "message_send": {"status": 200, "message_type": "TEXT"},
+    "message_list": {"status": 200, "total": 1},
+    "block_create": {"status": 200, "has_blocked_user_id": True},
+    "block_duplicate": {"status": 200},
+    "block_self": {"status": 422, "error_code": "VALIDATION_FAILED"},
+    "block_nonexistent": {"status": 404, "error_code": "NOT_FOUND"},
+    "block_list": {"status": 200, "total": 1},
+    "message_blocked": {"status": 403, "error_code": "BLOCKED"},
+    "block_unblock": {"status": 200},
+    "block_list_after_unblock": {"status": 200, "total": 0},
+    "message_after_unblock": {"status": 200, "message_type": "SUGGEST_TIME"},
+    "message_nonparticipant": {"status": 404, "error_code": "NOT_FOUND"},
+    "message_not_accepted": {"status": 409, "error_code": "INVALID_STATE_TRANSITION"},
+    "message_invalid_type": {"status": 422, "error_code": "VALIDATION_FAILED"},
+    "message_empty_content": {"status": 422, "error_code": "VALIDATION_FAILED"},
 }
 
 
@@ -383,6 +398,102 @@ def probe(base: str) -> dict:
     sig["claim_handover_conflict"] = {
         "status": r39.status_code,
         "error_code": r39.json().get("error", {}).get("code"),
+    }
+
+    # ---- safe-communication ----
+    # 会话 = 已接受的认领申请 claim_id；参与者为发布者(user1) 与 申请人(user2)
+    applicant2_id = httpx.get(base + f"/api/v1/posts/{found_id}/claims", headers=headers) \
+        .json()["data"]["items"][0]["applicantId"]
+
+    r40 = httpx.post(base + f"/api/v1/conversations/{claim_id}/messages", headers=headers2,
+                     json={"type": "TEXT", "content": "明天下午3点方便吗"})
+    sig["message_send"] = {
+        "status": r40.status_code,
+        "message_type": r40.json().get("data", {}).get("type"),
+    }
+
+    r41 = httpx.get(base + f"/api/v1/conversations/{claim_id}/messages", headers=headers)
+    sig["message_list"] = {
+        "status": r41.status_code,
+        "total": r41.json().get("data", {}).get("pagination", {}).get("total"),
+    }
+
+    r42 = httpx.post(base + "/api/v1/blocks", headers=headers, json={"blockedUserId": applicant2_id})
+    sig["block_create"] = {
+        "status": r42.status_code,
+        "has_blocked_user_id": bool(r42.json().get("data", {}).get("blockedUserId")),
+    }
+
+    r43 = httpx.post(base + "/api/v1/blocks", headers=headers, json={"blockedUserId": applicant2_id})
+    sig["block_duplicate"] = {"status": r43.status_code}
+
+    me_id = httpx.get(base + "/api/v1/me", headers=headers).json()["data"]["id"]
+    r44 = httpx.post(base + "/api/v1/blocks", headers=headers, json={"blockedUserId": me_id})
+    sig["block_self"] = {
+        "status": r44.status_code,
+        "error_code": r44.json().get("error", {}).get("code"),
+    }
+
+    r45 = httpx.post(base + "/api/v1/blocks", headers=headers, json={"blockedUserId": "nonexistent-user"})
+    sig["block_nonexistent"] = {
+        "status": r45.status_code,
+        "error_code": r45.json().get("error", {}).get("code"),
+    }
+
+    r46 = httpx.get(base + "/api/v1/me/blocks", headers=headers)
+    sig["block_list"] = {
+        "status": r46.status_code,
+        "total": r46.json().get("data", {}).get("pagination", {}).get("total"),
+    }
+
+    r47 = httpx.post(base + f"/api/v1/conversations/{claim_id}/messages", headers=headers2,
+                     json={"type": "TEXT", "content": "还在吗"})
+    sig["message_blocked"] = {
+        "status": r47.status_code,
+        "error_code": r47.json().get("error", {}).get("code"),
+    }
+
+    r48 = httpx.delete(base + f"/api/v1/blocks/{applicant2_id}", headers=headers)
+    sig["block_unblock"] = {"status": r48.status_code}
+
+    r49 = httpx.get(base + "/api/v1/me/blocks", headers=headers)
+    sig["block_list_after_unblock"] = {
+        "status": r49.status_code,
+        "total": r49.json().get("data", {}).get("pagination", {}).get("total"),
+    }
+
+    r50 = httpx.post(base + f"/api/v1/conversations/{claim_id}/messages", headers=headers2,
+                     json={"type": "SUGGEST_TIME", "content": "明天下午3点"})
+    sig["message_after_unblock"] = {
+        "status": r50.status_code,
+        "message_type": r50.json().get("data", {}).get("type"),
+    }
+
+    r51 = httpx.get(base + f"/api/v1/conversations/{claim_id}/messages", headers=headers3)
+    sig["message_nonparticipant"] = {
+        "status": r51.status_code,
+        "error_code": r51.json().get("error", {}).get("code"),
+    }
+
+    r52 = httpx.post(base + f"/api/v1/conversations/{claim_b}/messages", headers=headers3,
+                     json={"type": "TEXT", "content": "hi"})
+    sig["message_not_accepted"] = {
+        "status": r52.status_code,
+        "error_code": r52.json().get("error", {}).get("code"),
+    }
+
+    r53 = httpx.post(base + f"/api/v1/conversations/{claim_id}/messages", headers=headers2,
+                     json={"type": "INVALID_TYPE", "content": "x"})
+    sig["message_invalid_type"] = {
+        "status": r53.status_code,
+        "error_code": r53.json().get("error", {}).get("code"),
+    }
+
+    r54 = httpx.post(base + f"/api/v1/conversations/{claim_id}/messages", headers=headers2,
+                     json={"type": "TEXT", "content": ""})
+    sig["message_empty_content"] = {
+        "status": r54.status_code,
+        "error_code": r54.json().get("error", {}).get("code"),
     }
     return sig
 

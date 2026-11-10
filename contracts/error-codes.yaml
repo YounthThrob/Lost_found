@@ -29,6 +29,9 @@ error-codes:
   HANDOVER_CONFLICT:
     http_status: 409
     message: 已有申请进入待交接
+  BLOCKED:
+    http_status: 403
+    message: 已被对方拉黑，无法继续发送消息或申请
   INTERNAL_ERROR:
     http_status: 500
     message: 服务内部错误

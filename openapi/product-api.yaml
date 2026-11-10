@@ -686,6 +686,217 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
+  /blocks:
+    post:
+      summary: 拉黑用户
+      operationId: blockUser
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/BlockCreate"
+      responses:
+        "200":
+          description: 拉黑成功（幂等）
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BlockResponse"
+        "401":
+          description: 会话无效或已过期
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: 被拉黑用户不存在
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "422":
+          description: 拉黑自己等参数校验失败
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  /blocks/{userId}:
+    delete:
+      summary: 解除拉黑
+      operationId: unblockUser
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: 解除成功（幂等）
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BlockDeleteResponse"
+        "401":
+          description: 会话无效或已过期
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  /me/blocks:
+    get:
+      summary: 查看我的黑名单
+      operationId: listMyBlocks
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: page
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+        - name: pageSize
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 20
+      responses:
+        "200":
+          description: 黑名单列表（分页）
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BlockListResponse"
+        "401":
+          description: 会话无效或已过期
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "422":
+          description: 分页参数非法
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  /conversations/{conversationId}/messages:
+    get:
+      summary: 查看会话消息
+      operationId: listMessages
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: conversationId
+          in: path
+          required: true
+          schema:
+            type: string
+          description: 会话标识（当前为认领申请标识）
+        - name: page
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+        - name: pageSize
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 20
+      responses:
+        "200":
+          description: 会话消息列表（分页）
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MessageListResponse"
+        "401":
+          description: 会话无效或已过期
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: 会话不存在或无权访问
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "422":
+          description: 分页参数非法
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+    post:
+      summary: 发送有限消息
+      operationId: sendMessage
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: conversationId
+          in: path
+          required: true
+          schema:
+            type: string
+          description: 会话标识（当前为认领申请标识）
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/MessageCreate"
+      responses:
+        "200":
+          description: 发送成功
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MessageResponse"
+        "401":
+          description: 会话无效或已过期
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "403":
+          description: 未确认协议或被对方拉黑（AGREEMENT_NOT_ACCEPTED / BLOCKED）
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: 会话不存在或无权访问
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "409":
+          description: 申请尚未接受（INVALID_STATE_TRANSITION）
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "422":
+          description: 消息类型或内容非法
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
 components:
   securitySchemes:
     bearerAuth:
@@ -1112,6 +1323,157 @@ components:
       properties:
         data:
           $ref: "#/components/schemas/ClaimListData"
+        requestId:
+          type: string
+        timestamp:
+          type: string
+          format: date-time
+    BlockCreate:
+      type: object
+      required:
+        - blockedUserId
+      properties:
+        blockedUserId:
+          type: string
+          description: 被拉黑用户标识（UUID，非空）
+    BlockView:
+      type: object
+      required:
+        - blockedUserId
+        - createdAt
+      properties:
+        blockedUserId:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+    BlockListData:
+      type: object
+      required:
+        - items
+        - pagination
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/BlockView"
+        pagination:
+          $ref: "#/components/schemas/Pagination"
+    BlockResponse:
+      type: object
+      required:
+        - data
+        - requestId
+        - timestamp
+      properties:
+        data:
+          $ref: "#/components/schemas/BlockView"
+        requestId:
+          type: string
+        timestamp:
+          type: string
+          format: date-time
+    BlockListResponse:
+      type: object
+      required:
+        - data
+        - requestId
+        - timestamp
+      properties:
+        data:
+          $ref: "#/components/schemas/BlockListData"
+        requestId:
+          type: string
+        timestamp:
+          type: string
+          format: date-time
+    BlockDeleteResponse:
+      type: object
+      required:
+        - data
+        - requestId
+        - timestamp
+      properties:
+        data:
+          type: object
+          additionalProperties: false
+        requestId:
+          type: string
+        timestamp:
+          type: string
+          format: date-time
+    MessageCreate:
+      type: object
+      required:
+        - type
+        - content
+      properties:
+        type:
+          type: string
+          enum: [TEXT, SUGGEST_TIME, SUGGEST_PLACE, LATE_REMINDER]
+          description: TEXT=文本留言，SUGGEST_TIME=建议时间，SUGGEST_PLACE=建议地点，LATE_REMINDER=迟到提醒
+        content:
+          type: string
+          description: 消息内容（非空，≤2000 字符）
+    MessageView:
+      type: object
+      required:
+        - id
+        - conversationId
+        - senderId
+        - type
+        - content
+        - createdAt
+      properties:
+        id:
+          type: string
+        conversationId:
+          type: string
+        senderId:
+          type: string
+        type:
+          type: string
+          enum: [TEXT, SUGGEST_TIME, SUGGEST_PLACE, LATE_REMINDER]
+        content:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+    MessageListData:
+      type: object
+      required:
+        - items
+        - pagination
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/MessageView"
+        pagination:
+          $ref: "#/components/schemas/Pagination"
+    MessageResponse:
+      type: object
+      required:
+        - data
+        - requestId
+        - timestamp
+      properties:
+        data:
+          $ref: "#/components/schemas/MessageView"
+        requestId:
+          type: string
+        timestamp:
+          type: string
+          format: date-time
+    MessageListResponse:
+      type: object
+      required:
+        - data
+        - requestId
+        - timestamp
+      properties:
+        data:
+          $ref: "#/components/schemas/MessageListData"
         requestId:
           type: string
         timestamp:
