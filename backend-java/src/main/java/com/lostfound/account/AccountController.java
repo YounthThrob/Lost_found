@@ -4,6 +4,7 @@ import com.lostfound.shared.Envelope;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -21,6 +22,12 @@ public class AccountController {
     }
 
     public record LoginRequest(String code) {
+    }
+
+    public record CampusProfileUpdate(String school, String campus) {
+    }
+
+    public record CampusProfileView(String school, String campus, String verificationStatus) {
     }
 
     @PostMapping("/session/wechat")
@@ -44,5 +51,19 @@ public class AccountController {
     public Envelope.Response<Map<String, Object>> confirmAgreement(Authentication authentication) {
         accountService.confirmAgreement(authentication.getName());
         return Envelope.ok(Map.of("agreementAccepted", true));
+    }
+
+    @GetMapping("/me/campus-profile")
+    public Envelope.Response<CampusProfileView> getCampusProfile(Authentication authentication) {
+        UserAccount user = accountService.currentUser(authentication.getName());
+        return Envelope.ok(new CampusProfileView(user.school(), user.campus(), "SELF_DECLARED"));
+    }
+
+    @PutMapping("/me/campus-profile")
+    public Envelope.Response<CampusProfileView> putCampusProfile(Authentication authentication,
+                                                                 @RequestBody CampusProfileUpdate request) {
+        UserAccount user = accountService.updateCampusProfile(
+            authentication.getName(), request.school(), request.campus());
+        return Envelope.ok(new CampusProfileView(user.school(), user.campus(), "SELF_DECLARED"));
     }
 }

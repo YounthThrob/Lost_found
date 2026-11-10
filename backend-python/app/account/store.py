@@ -13,6 +13,8 @@ class UserAccount:
     openid: str
     status: str
     agreement_accepted_at: str | None = None
+    school: str | None = None
+    campus: str | None = None
 
     @property
     def agreement_accepted(self) -> bool:
@@ -49,6 +51,23 @@ class InMemoryUserStore:
             openid=user.openid,
             status=user.status,
             agreement_accepted_at=_now(),
+            school=user.school,
+            campus=user.campus,
+        )
+        self._by_openid[user.openid] = updated
+        return updated
+
+    def update_campus(self, user_id: str, school: str, campus: str | None) -> UserAccount | None:
+        user = self.find_by_id(user_id)
+        if user is None:
+            return None
+        updated = UserAccount(
+            id=user.id,
+            openid=user.openid,
+            status=user.status,
+            agreement_accepted_at=user.agreement_accepted_at,
+            school=school,
+            campus=campus,
         )
         self._by_openid[user.openid] = updated
         return updated

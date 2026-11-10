@@ -18,7 +18,7 @@ public class InMemoryUserStore {
 
     public UserAccount findByOpenid(String openid) {
         return byOpenid.computeIfAbsent(openid,
-            o -> new UserAccount(UUID.randomUUID().toString(), o, "ACTIVE", null));
+            o -> new UserAccount(UUID.randomUUID().toString(), o, "ACTIVE", null, null, null));
     }
 
     public UserAccount findById(String id) {
@@ -37,7 +37,18 @@ public class InMemoryUserStore {
             return user;
         }
         UserAccount updated = new UserAccount(user.id(), user.openid(), user.status(),
-            Instant.now().toString());
+            Instant.now().toString(), user.school(), user.campus());
+        byOpenid.put(user.openid(), updated);
+        return updated;
+    }
+
+    public UserAccount updateCampus(String userId, String school, String campus) {
+        UserAccount user = findById(userId);
+        if (user == null) {
+            return null;
+        }
+        UserAccount updated = new UserAccount(user.id(), user.openid(), user.status(),
+            user.agreementAcceptedAt(), school, campus);
         byOpenid.put(user.openid(), updated);
         return updated;
     }

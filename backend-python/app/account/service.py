@@ -1,9 +1,11 @@
 from app.account.store import InMemoryUserStore, UserAccount
 from app.account.wechat_client import code2session_openid
 from app.security.jwt import issue_token
-from app.shared.errors import AGREEMENT_NOT_ACCEPTED, BusinessError
+from app.shared.errors import AGREEMENT_NOT_ACCEPTED, VALIDATION_FAILED, BusinessError
 
 _store = InMemoryUserStore()
+
+MAX_FIELD_LENGTH = 100
 
 
 def login(code: str) -> tuple[str, bool]:
@@ -27,3 +29,15 @@ def require_agreement(user_id: str) -> UserAccount:
     if user is None or not user.agreement_accepted:
         raise BusinessError(AGREEMENT_NOT_ACCEPTED)
     return user
+
+
+def update_campus_profile(user_id: str, school: str | None, campus: str | None) -> UserAccount:
+    normalized_school = (school or "").strip()
+    normalized_campus = campus.strip() if campus and campus.strip() else None
+    if not normalized_school:
+        raise BusinessError(VALIDATION_FAILED)
+    if len(normalized_school) > MAX_FIELD_LENGTH or (
+        normalized_campus and len(normalized_campus) > MAX_FIELD_LENGTH
+    ):
+        raise BusinessError(VALIDATION_FAILED)
+    return _store.update_campus(user_id, normalized_school, normalized_campus)

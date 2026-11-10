@@ -11,6 +11,9 @@ error-codes:
   AGREEMENT_NOT_ACCEPTED:
     http_status: 403
     message: 未确认用户协议，禁止发布/留言/认领
+  VALIDATION_FAILED:
+    http_status: 422
+    message: 参数校验失败
   INTERNAL_ERROR:
     http_status: 500
     message: 服务内部错误

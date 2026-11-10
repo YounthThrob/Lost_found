@@ -73,6 +73,55 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
+  /me/campus-profile:
+    get:
+      summary: 查询当前用户自报学校与校区
+      operationId: getCampusProfile
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: 自报学校与校区（未设置时 school/campus 为 null）
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CampusProfileResponse"
+        "401":
+          description: 会话无效或已过期
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+    put:
+      summary: 设置或更新自报学校与校区
+      operationId: putCampusProfile
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CampusProfileUpdate"
+      responses:
+        "200":
+          description: 更新成功，返回自报学校与校区
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CampusProfileResponse"
+        "401":
+          description: 会话无效或已过期
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "422":
+          description: 学校为空或超长等参数校验失败
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
 components:
   securitySchemes:
     bearerAuth:
@@ -141,6 +190,42 @@ components:
           properties:
             agreementAccepted:
               type: boolean
+        requestId:
+          type: string
+        timestamp:
+          type: string
+          format: date-time
+    CampusProfileUpdate:
+      type: object
+      required:
+        - school
+      properties:
+        school:
+          type: string
+          description: 自报学校（必填，非空，≤100 字符）
+        campus:
+          type: ["string", "null"]
+          description: 自报校区（可选，≤100 字符）
+    CampusProfileResponse:
+      type: object
+      required:
+        - data
+        - requestId
+        - timestamp
+      properties:
+        data:
+          type: object
+          required:
+            - verificationStatus
+          properties:
+            school:
+              type: ["string", "null"]
+            campus:
+              type: ["string", "null"]
+            verificationStatus:
+              type: string
+              enum:
+                - SELF_DECLARED
         requestId:
           type: string
         timestamp:

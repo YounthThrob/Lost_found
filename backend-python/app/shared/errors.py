@@ -19,6 +19,7 @@ class ErrorCode:
 SESSION_EXPIRED = ErrorCode("SESSION_EXPIRED", 401, "会话已过期，请重新登录")
 WECHAT_CODE_INVALID = ErrorCode("WECHAT_CODE_INVALID", 401, "微信登录凭证无效或已过期")
 AGREEMENT_NOT_ACCEPTED = ErrorCode("AGREEMENT_NOT_ACCEPTED", 403, "未确认用户协议，禁止发布/留言/认领")
+VALIDATION_FAILED = ErrorCode("VALIDATION_FAILED", 422, "参数校验失败")
 INTERNAL_ERROR = ErrorCode("INTERNAL_ERROR", 500, "服务内部错误")
 
 
@@ -56,7 +57,7 @@ def register_exception_handlers(app: FastAPI) -> None:
 
     @app.exception_handler(RequestValidationError)
     async def _validation(request: Request, exc: RequestValidationError):
-        return JSONResponse(status_code=422, content={"detail": exc.errors()})
+        return error_response(VALIDATION_FAILED)
 
     @app.exception_handler(Exception)
     async def _unexpected(request: Request, exc: Exception):

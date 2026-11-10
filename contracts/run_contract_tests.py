@@ -36,6 +36,10 @@ EXPECTED = {
     "me_valid": {"status": 200, "has_id": True, "user_status": "ACTIVE", "agreement_accepted": False},
     "confirm_agreement": {"status": 200, "agreement_accepted": True},
     "me_after_agreement": {"status": 200, "agreement_accepted": True},
+    "campus_unset": {"status": 200, "school": None, "verification_status": "SELF_DECLARED"},
+    "campus_put": {"status": 200, "school": "南方大学", "campus": "东校区", "verification_status": "SELF_DECLARED"},
+    "campus_get": {"status": 200, "school": "南方大学", "campus": "东校区"},
+    "campus_invalid": {"status": 422, "error_code": "VALIDATION_FAILED"},
 }
 
 
@@ -83,6 +87,35 @@ def probe(base: str) -> dict:
     sig["me_after_agreement"] = {
         "status": r6.status_code,
         "agreement_accepted": r6.json().get("data", {}).get("agreementAccepted"),
+    }
+
+    r7 = httpx.get(base + "/api/v1/me/campus-profile", headers=headers)
+    sig["campus_unset"] = {
+        "status": r7.status_code,
+        "school": r7.json().get("data", {}).get("school"),
+        "verification_status": r7.json().get("data", {}).get("verificationStatus"),
+    }
+
+    r8 = httpx.put(base + "/api/v1/me/campus-profile", headers=headers,
+                   json={"school": "南方大学", "campus": "东校区"})
+    sig["campus_put"] = {
+        "status": r8.status_code,
+        "school": r8.json().get("data", {}).get("school"),
+        "campus": r8.json().get("data", {}).get("campus"),
+        "verification_status": r8.json().get("data", {}).get("verificationStatus"),
+    }
+
+    r9 = httpx.get(base + "/api/v1/me/campus-profile", headers=headers)
+    sig["campus_get"] = {
+        "status": r9.status_code,
+        "school": r9.json().get("data", {}).get("school"),
+        "campus": r9.json().get("data", {}).get("campus"),
+    }
+
+    r10 = httpx.put(base + "/api/v1/me/campus-profile", headers=headers, json={"school": ""})
+    sig["campus_invalid"] = {
+        "status": r10.status_code,
+        "error_code": r10.json().get("error", {}).get("code"),
     }
     return sig
 
