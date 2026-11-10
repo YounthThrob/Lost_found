@@ -1,6 +1,7 @@
 from uuid import uuid4
 
 from app.listing.store import InMemoryItemPostStore, ItemPost, now_utc
+from app.moderation.service import is_rejected
 from app.shared.errors import (
     INVALID_STATE_TRANSITION,
     NOT_FOUND,
@@ -71,7 +72,8 @@ def publish(author_id: str, post_id: str) -> ItemPost:
     post = _require_owned(author_id, post_id)
     if post.status != "DRAFT":
         raise BusinessError(INVALID_STATE_TRANSITION)
-    return _with_status(post, "PUBLISHED")
+    status = "REJECTED" if is_rejected(post.title, post.public_description) else "PUBLISHED"
+    return _with_status(post, status)
 
 
 def close(author_id: str, post_id: str) -> ItemPost:

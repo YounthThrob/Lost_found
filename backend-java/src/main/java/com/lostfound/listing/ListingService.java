@@ -1,5 +1,6 @@
 package com.lostfound.listing;
 
+import com.lostfound.moderation.ContentModerator;
 import com.lostfound.shared.BusinessException;
 import com.lostfound.shared.ErrorCode;
 import org.springframework.stereotype.Service;
@@ -32,9 +33,11 @@ public class ListingService {
     private static final int MAX_PAGE_SIZE = 100;
 
     private final ItemPostStore store;
+    private final ContentModerator moderator;
 
-    public ListingService(ItemPostStore store) {
+    public ListingService(ItemPostStore store, ContentModerator moderator) {
         this.store = store;
+        this.moderator = moderator;
     }
 
     public ItemPost createDraft(String authorId, ItemPostCreate input) {
@@ -72,7 +75,8 @@ public class ListingService {
         if (!"DRAFT".equals(post.status())) {
             throw new BusinessException(ErrorCode.INVALID_STATE_TRANSITION);
         }
-        ItemPost updated = withStatus(post, "PUBLISHED", Instant.now().toString());
+        String status = moderator.isRejected(post.title(), post.publicDescription()) ? "REJECTED" : "PUBLISHED";
+        ItemPost updated = withStatus(post, status, Instant.now().toString());
         store.save(updated);
         return updated;
     }

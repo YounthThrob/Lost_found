@@ -1,0 +1,9 @@
+# 内容自动检测规则（MVP mock）。共同事实源。
+# 发布时对 title 与 publicDescription 做大小写不敏感包含匹配，命中任一违禁词则 PENDING_REVIEW → REJECTED。
+# 真实内容审核（第三方服务/模型）另立 change，本文件届时替换为审核服务配置。
+moderation:
+  detector: mock-keyword
+  banned_keywords:
+    - 转账
+    - 刷单
+    - 诈骗

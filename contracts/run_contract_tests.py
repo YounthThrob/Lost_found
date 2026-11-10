@@ -53,6 +53,11 @@ EXPECTED = {
     "listing_invalid_close": {"status": 409, "error_code": "INVALID_STATE_TRANSITION"},
     "listing_not_found": {"status": 404, "error_code": "NOT_FOUND"},
     "listing_empty_title": {"status": 422, "error_code": "VALIDATION_FAILED"},
+    "moderation_reject": {"status": 200, "post_status": "REJECTED"},
+    "moderation_reject_hidden": {"status": 200, "total": 0},
+    "report_create": {"status": 200, "report_status": "SUBMITTED", "has_id": True},
+    "report_invalid_type": {"status": 422, "error_code": "VALIDATION_FAILED"},
+    "report_me_list": {"status": 200, "total": 1},
 }
 
 
@@ -63,6 +68,14 @@ POST_BODY = {
     "publicDescription": "在图书馆附近遗失一张校园卡",
     "school": "南方大学",
     "campus": "东校区",
+}
+
+BANNED_BODY = {
+    "type": "LOST",
+    "category": "其他",
+    "title": "高价回收",
+    "publicDescription": "要求先转账到指定账户",
+    "school": "南方大学",
 }
 
 
@@ -224,6 +237,41 @@ def probe(base: str) -> dict:
     sig["listing_empty_title"] = {
         "status": r23.status_code,
         "error_code": r23.json().get("error", {}).get("code"),
+    }
+
+    # ---- moderation / report ----
+    banned_id = httpx.post(base + "/api/v1/posts", headers=headers, json=BANNED_BODY).json()["data"]["id"]
+    r24 = httpx.post(base + f"/api/v1/posts/{banned_id}/publish", headers=headers)
+    sig["moderation_reject"] = {
+        "status": r24.status_code,
+        "post_status": r24.json().get("data", {}).get("status"),
+    }
+
+    r25 = httpx.get(base + "/api/v1/posts", headers=headers)
+    sig["moderation_reject_hidden"] = {
+        "status": r25.status_code,
+        "total": r25.json().get("data", {}).get("pagination", {}).get("total"),
+    }
+
+    r26 = httpx.post(base + "/api/v1/reports", headers=headers,
+                     json={"targetType": "POST", "targetId": "post-abc123", "reason": "疑似诈骗"})
+    sig["report_create"] = {
+        "status": r26.status_code,
+        "report_status": r26.json().get("data", {}).get("status"),
+        "has_id": bool(r26.json().get("data", {}).get("id")),
+    }
+
+    r27 = httpx.post(base + "/api/v1/reports", headers=headers,
+                     json={"targetType": "OTHER", "targetId": "post-abc123", "reason": "其他"})
+    sig["report_invalid_type"] = {
+        "status": r27.status_code,
+        "error_code": r27.json().get("error", {}).get("code"),
+    }
+
+    r28 = httpx.get(base + "/api/v1/reports/me", headers=headers)
+    sig["report_me_list"] = {
+        "status": r28.status_code,
+        "total": r28.json().get("data", {}).get("pagination", {}).get("total"),
     }
     return sig
 

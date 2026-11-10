@@ -325,7 +325,7 @@ paths:
             type: string
       responses:
         "200":
-          description: 发布成功，状态为 PUBLISHED
+          description: 发布成功，状态为 PUBLISHED 或 REJECTED（命中违禁词）
           content:
             application/json:
               schema:
@@ -393,6 +393,78 @@ paths:
                 $ref: "#/components/schemas/ErrorResponse"
         "409":
           description: 非法状态迁移（仅已发布可关闭）
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  /reports:
+    post:
+      summary: 提交举报
+      operationId: createReport
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ReportCreate"
+      responses:
+        "200":
+          description: 举报提交成功
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ReportResponse"
+        "401":
+          description: 会话无效或已过期
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "422":
+          description: 参数校验失败
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  /reports/me:
+    get:
+      summary: 查看我的举报
+      operationId: listMyReports
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: page
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+        - name: pageSize
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 20
+      responses:
+        "200":
+          description: 我的举报列表（分页）
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ReportListResponse"
+        "401":
+          description: 会话无效或已过期
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "422":
+          description: 分页参数非法
           content:
             application/json:
               schema:
@@ -594,7 +666,7 @@ components:
           type: ["string", "null"]
         status:
           type: string
-          enum: [DRAFT, PENDING_REVIEW, PUBLISHED, CLOSED]
+          enum: [DRAFT, PENDING_REVIEW, PUBLISHED, REJECTED, CLOSED]
         authorId:
           type: string
         createdAt:
@@ -654,6 +726,96 @@ components:
       properties:
         data:
           $ref: "#/components/schemas/ItemPostListData"
+        requestId:
+          type: string
+        timestamp:
+          type: string
+          format: date-time
+    ReportCreate:
+      type: object
+      required:
+        - targetType
+        - targetId
+        - reason
+      properties:
+        targetType:
+          type: string
+          enum: [POST, USER]
+          description: POST=举报信息，USER=举报用户
+        targetId:
+          type: string
+          description: 举报对象标识（非空，≤100 字符）
+        reason:
+          type: string
+          description: 举报分类（非空，≤100 字符）
+        description:
+          type: ["string", "null"]
+          description: 补充说明（可选，≤500 字符）
+    ReportView:
+      type: object
+      required:
+        - id
+        - targetType
+        - targetId
+        - reason
+        - status
+        - reporterId
+        - createdAt
+      properties:
+        id:
+          type: string
+        targetType:
+          type: string
+          enum: [POST, USER]
+        targetId:
+          type: string
+        reason:
+          type: string
+        description:
+          type: ["string", "null"]
+        status:
+          type: string
+          enum: [SUBMITTED]
+        reporterId:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+    ReportListData:
+      type: object
+      required:
+        - items
+        - pagination
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/ReportView"
+        pagination:
+          $ref: "#/components/schemas/Pagination"
+    ReportResponse:
+      type: object
+      required:
+        - data
+        - requestId
+        - timestamp
+      properties:
+        data:
+          $ref: "#/components/schemas/ReportView"
+        requestId:
+          type: string
+        timestamp:
+          type: string
+          format: date-time
+    ReportListResponse:
+      type: object
+      required:
+        - data
+        - requestId
+        - timestamp
+      properties:
+        data:
+          $ref: "#/components/schemas/ReportListData"
         requestId:
           type: string
         timestamp:
