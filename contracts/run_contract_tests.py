@@ -8,6 +8,7 @@
     backend-python/.venv/Scripts/python.exe contracts/run_contract_tests.py
 """
 import os
+import re
 import subprocess
 import sys
 import time
@@ -30,8 +31,15 @@ EXPECTED = {
         "leaks_openid": False,
         "leaks_session_key": False,
         "keys": ["data", "requestId", "timestamp"],
+        "timestamp_is_rfc3339": True,
     },
-    "login_invalid": {"status": 401, "error_code": "WECHAT_CODE_INVALID"},
+    "login_invalid": {
+        "status": 401,
+        "error_code": "WECHAT_CODE_INVALID",
+        "error_keys": ["code", "details", "message"],
+        "details_empty": True,
+        "has_request_id": True,
+    },
     "me_no_auth": {"status": 401, "error_code": "SESSION_EXPIRED"},
     "me_valid": {"status": 200, "has_id": True, "user_status": "ACTIVE", "agreement_accepted": False},
     "confirm_agreement": {"status": 200, "agreement_accepted": True},
@@ -46,7 +54,16 @@ EXPECTED = {
     "listing_detail_draft_hidden": {"status": 404, "error_code": "NOT_FOUND"},
     "listing_publish": {"status": 200, "post_status": "PUBLISHED"},
     "listing_detail": {"status": 200, "post_status": "PUBLISHED"},
-    "listing_search_published": {"status": 200, "total": 1},
+    "listing_search_published": {
+        "status": 200,
+        "total": 1,
+        "pagination": {"page": 1, "pageSize": 20, "total": 1, "hasMore": False},
+    },
+    "pagination_page_zero": {"status": 422, "error_code": "VALIDATION_FAILED"},
+    "pagination_page_size_overflow": {"status": 422, "error_code": "VALIDATION_FAILED"},
+    "pagination_non_integer_page": {"status": 422, "error_code": "VALIDATION_FAILED"},
+    "pagination_page_size_max": {"status": 200, "page_size": 100},
+    "pagination_beyond_last_page": {"status": 200, "total": 1, "items": [], "has_more": False},
     "listing_publish_again": {"status": 409, "error_code": "INVALID_STATE_TRANSITION"},
     "listing_close": {"status": 200, "post_status": "CLOSED"},
     "listing_search_closed_hidden": {"status": 200, "total": 0},
@@ -138,6 +155,8 @@ def probe(base: str) -> dict:
         "leaks_openid": "openid" in r.text,
         "leaks_session_key": "session_key" in r.text,
         "keys": sorted(r.json().keys()),
+        "timestamp_is_rfc3339": bool(re.fullmatch(
+            r"\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d+)?Z", r.json().get("timestamp", ""))),
     }
     token = r.json()["data"]["token"]
     headers = {"Authorization": "Bearer " + token}
@@ -146,6 +165,9 @@ def probe(base: str) -> dict:
     sig["login_invalid"] = {
         "status": r2.status_code,
         "error_code": r2.json().get("error", {}).get("code"),
+        "error_keys": sorted(r2.json().get("error", {}).keys()),
+        "details_empty": r2.json().get("error", {}).get("details") == {},
+        "has_request_id": bool(r2.json().get("requestId")),
     }
 
     r3 = httpx.get(base + "/api/v1/me")
@@ -249,6 +271,40 @@ def probe(base: str) -> dict:
     sig["listing_search_published"] = {
         "status": r17.status_code,
         "total": r17.json().get("data", {}).get("pagination", {}).get("total"),
+        "pagination": r17.json().get("data", {}).get("pagination"),
+    }
+
+    # ---- 分页契约 ----
+    rp0 = httpx.get(base + "/api/v1/posts", headers=headers, params={"page": 0})
+    sig["pagination_page_zero"] = {
+        "status": rp0.status_code,
+        "error_code": rp0.json().get("error", {}).get("code"),
+    }
+
+    rp1 = httpx.get(base + "/api/v1/posts", headers=headers, params={"pageSize": 101})
+    sig["pagination_page_size_overflow"] = {
+        "status": rp1.status_code,
+        "error_code": rp1.json().get("error", {}).get("code"),
+    }
+
+    rp2 = httpx.get(base + "/api/v1/posts", headers=headers, params={"page": "abc"})
+    sig["pagination_non_integer_page"] = {
+        "status": rp2.status_code,
+        "error_code": rp2.json().get("error", {}).get("code"),
+    }
+
+    rp3 = httpx.get(base + "/api/v1/posts", headers=headers, params={"pageSize": 100})
+    sig["pagination_page_size_max"] = {
+        "status": rp3.status_code,
+        "page_size": rp3.json().get("data", {}).get("pagination", {}).get("pageSize"),
+    }
+
+    rp4 = httpx.get(base + "/api/v1/posts", headers=headers, params={"page": 999})
+    sig["pagination_beyond_last_page"] = {
+        "status": rp4.status_code,
+        "total": rp4.json().get("data", {}).get("pagination", {}).get("total"),
+        "items": rp4.json().get("data", {}).get("items"),
+        "has_more": rp4.json().get("data", {}).get("pagination", {}).get("hasMore"),
     }
 
     r18 = httpx.post(base + f"/api/v1/posts/{post_id}/publish", headers=headers)

@@ -287,6 +287,15 @@ class ListingTest {
     }
 
     @Test
+    void search_non_integer_page_returns_422() throws Exception {
+        String token = confirmedToken("valid-code");
+
+        mockMvc.perform(get("/api/v1/posts").param("page", "abc").header("Authorization", bearer(token)))
+            .andExpect(status().isUnprocessableEntity())
+            .andExpect(jsonPath("$.error.code").value("VALIDATION_FAILED"));
+    }
+
+    @Test
     void detail_draft_only_author_visible() throws Exception {
         String token1 = confirmedToken("valid-code");
         String token2 = confirmedToken("valid-code-2");
