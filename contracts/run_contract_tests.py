@@ -127,6 +127,14 @@ EXPECTED = {
     "clue_decide_invalid": {"status": 200, "clue_status": "CLOSED"},
     "clue_decide_nonowner": {"status": 404, "error_code": "NOT_FOUND"},
     "clue_rate_limited": {"status": 429, "error_code": "RATE_LIMITED", "requests_before_429": 20},
+    "bookmark_add": {"status": 200, "has_post_id": True, "post_status": "PUBLISHED"},
+    "bookmark_duplicate": {"status": 200},
+    "bookmark_list": {"status": 200, "total": 1, "post_status": "PUBLISHED"},
+    "bookmark_nonvisible": {"status": 404, "error_code": "NOT_FOUND"},
+    "bookmark_private": {"status": 200, "total": 0},
+    "bookmark_delete": {"status": 200},
+    "bookmark_list_after_delete": {"status": 200, "total": 0},
+    "bookmark_delete_idempotent": {"status": 200},
 }
 
 
@@ -559,6 +567,51 @@ def probe(base: str) -> dict:
         "status": rc10.status_code,
         "error_code": rc10.json().get("error", {}).get("code"),
     }
+
+    # ---- bookmarks ----
+    bm_post = httpx.post(base + "/api/v1/posts", headers=headers, json=POST_BODY).json()["data"]["id"]
+    httpx.post(base + f"/api/v1/posts/{bm_post}/publish", headers=headers)
+
+    rb1 = httpx.post(base + f"/api/v1/posts/{bm_post}/bookmark", headers=headers2)
+    sig["bookmark_add"] = {
+        "status": rb1.status_code,
+        "has_post_id": bool(rb1.json().get("data", {}).get("postId")),
+        "post_status": rb1.json().get("data", {}).get("post", {}).get("status"),
+    }
+
+    rb2 = httpx.post(base + f"/api/v1/posts/{bm_post}/bookmark", headers=headers2)
+    sig["bookmark_duplicate"] = {"status": rb2.status_code}
+
+    rb3 = httpx.get(base + "/api/v1/me/bookmarks", headers=headers2)
+    sig["bookmark_list"] = {
+        "status": rb3.status_code,
+        "total": rb3.json().get("data", {}).get("pagination", {}).get("total"),
+        "post_status": rb3.json().get("data", {}).get("items", [{}])[0].get("post", {}).get("status"),
+    }
+
+    rb4 = httpx.post(base + f"/api/v1/posts/{post_id}/bookmark", headers=headers2)
+    sig["bookmark_nonvisible"] = {
+        "status": rb4.status_code,
+        "error_code": rb4.json().get("error", {}).get("code"),
+    }
+
+    rb5 = httpx.get(base + "/api/v1/me/bookmarks", headers=headers)
+    sig["bookmark_private"] = {
+        "status": rb5.status_code,
+        "total": rb5.json().get("data", {}).get("pagination", {}).get("total"),
+    }
+
+    rb6 = httpx.delete(base + f"/api/v1/posts/{bm_post}/bookmark", headers=headers2)
+    sig["bookmark_delete"] = {"status": rb6.status_code}
+
+    rb7 = httpx.get(base + "/api/v1/me/bookmarks", headers=headers2)
+    sig["bookmark_list_after_delete"] = {
+        "status": rb7.status_code,
+        "total": rb7.json().get("data", {}).get("pagination", {}).get("total"),
+    }
+
+    rb8 = httpx.delete(base + f"/api/v1/posts/{bm_post}/bookmark", headers=headers2)
+    sig["bookmark_delete_idempotent"] = {"status": rb8.status_code}
 
     # ---- safe-communication ----
     # 会话 = 已接受的认领申请 claim_id；参与者为发布者(user1) 与 申请人(user2)

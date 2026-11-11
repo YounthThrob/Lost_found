@@ -28,7 +28,7 @@ public class ListingController {
                                String publicDescription, String school, String campus, String area,
                                String status, String authorId, String createdAt, String updatedAt) {
 
-        static ItemPostView from(ItemPost p) {
+        public static ItemPostView from(ItemPost p) {
             return new ItemPostView(p.id(), p.type(), p.category(), p.title(), p.publicDescription(),
                 p.school(), p.campus(), p.area(), p.status(), p.authorId(), p.createdAt(), p.updatedAt());
         }
