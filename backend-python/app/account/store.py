@@ -71,3 +71,24 @@ class InMemoryUserStore:
         )
         self._by_openid[user.openid] = updated
         return updated
+
+    def restrict(self, user_id: str) -> UserAccount | None:
+        return self._set_status(user_id, "RESTRICTED")
+
+    def unrestrict(self, user_id: str) -> UserAccount | None:
+        return self._set_status(user_id, "ACTIVE")
+
+    def _set_status(self, user_id: str, status: str) -> UserAccount | None:
+        user = self.find_by_id(user_id)
+        if user is None:
+            return None
+        updated = UserAccount(
+            id=user.id,
+            openid=user.openid,
+            status=status,
+            agreement_accepted_at=user.agreement_accepted_at,
+            school=user.school,
+            campus=user.campus,
+        )
+        self._by_openid[user.openid] = updated
+        return updated

@@ -2,6 +2,7 @@ package com.lostfound.listing;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.lostfound.abuse.RateLimiter;
 import com.lostfound.account.InMemoryUserStore;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -40,10 +41,14 @@ class ListingTest {
     @Autowired
     private ItemPostStore postStore;
 
+    @Autowired
+    private RateLimiter rateLimiter;
+
     @BeforeEach
     void resetStores() {
         userStore.clear();
         postStore.clear();
+        rateLimiter.clear();
     }
 
     private String loginToken(String code) throws Exception {

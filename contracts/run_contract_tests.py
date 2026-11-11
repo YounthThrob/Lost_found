@@ -97,6 +97,8 @@ EXPECTED = {
     "handover_cancel_claim": {"status": 200, "claim_status": "CANCELLED"},
     "handover_cancel_post_published": {"status": 200, "post_status": "PUBLISHED"},
     "handover_confirm_cancelled": {"status": 409, "error_code": "INVALID_STATE_TRANSITION"},
+    "claim_rate_limited": {"status": 429, "error_code": "CLAIM_RATE_LIMITED", "requests_before_429": 20},
+    "post_rate_limited": {"status": 429, "error_code": "RATE_LIMITED", "requests_before_429": 20},
 }
 
 
@@ -610,6 +612,39 @@ def probe(base: str) -> dict:
         "status": r67.status_code,
         "error_code": r67.json().get("error", {}).get("code"),
     }
+
+    # ---- abuse-prevention (rate limiting) ----
+    # 使用独立用户 valid-code-4，连续请求直到触发 429，记录触发前通过的请求数（应等于 limits 阈值）。
+    token4 = httpx.post(base + "/api/v1/session/wechat", json={"code": "valid-code-4"}).json()["data"]["token"]
+    headers4 = {"Authorization": "Bearer " + token4}
+    httpx.post(base + "/api/v1/me/agreement", headers=headers4)
+
+    claim_before = 0
+    claim_resp = None
+    for _ in range(25):
+        claim_resp = httpx.post(base + "/api/v1/posts/dummy-post/claims", headers=headers4,
+                                json={"statement": "x"})
+        if claim_resp.status_code == 429:
+            break
+        claim_before += 1
+    sig["claim_rate_limited"] = {
+        "status": claim_resp.status_code,
+        "error_code": claim_resp.json().get("error", {}).get("code"),
+        "requests_before_429": claim_before,
+    }
+
+    post_before = 0
+    post_resp = None
+    for _ in range(25):
+        post_resp = httpx.post(base + "/api/v1/posts", headers=headers4, json=POST_BODY)
+        if post_resp.status_code == 429:
+            break
+        post_before += 1
+    sig["post_rate_limited"] = {
+        "status": post_resp.status_code,
+        "error_code": post_resp.json().get("error", {}).get("code"),
+        "requests_before_429": post_before,
+    }
     return sig
 
 
@@ -624,6 +659,24 @@ def wait_ready(base: str, timeout: float = 120.0) -> None:
             pass
         time.sleep(1.0)
     raise RuntimeError(f"server at {base} did not become ready within {timeout}s")
+
+
+def terminate(proc: subprocess.Popen) -> None:
+    """可靠地终止后端进程（Windows 用 taskkill /F /T 强制结束进程树，避免遗留孤儿进程占用端口）。"""
+    if proc.poll() is not None:
+        return
+    if os.name == "nt":
+        subprocess.run(
+            ["taskkill", "/F", "/T", "/PID", str(proc.pid)],
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+        )
+    else:
+        proc.terminate()
+    try:
+        proc.wait(timeout=10)
+    except subprocess.TimeoutExpired:
+        proc.kill()
 
 
 def main() -> int:
@@ -672,13 +725,8 @@ def main() -> int:
             print(f"  {name}: {java_sig[name]!r}")
         return 0
     finally:
-        for proc in (java_proc, py_proc):
-            proc.terminate()
-        for proc in (java_proc, py_proc):
-            try:
-                proc.wait(timeout=10)
-            except subprocess.TimeoutExpired:
-                proc.kill()
+        terminate(java_proc)
+        terminate(py_proc)
 
 
 if __name__ == "__main__":

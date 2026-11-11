@@ -1,5 +1,6 @@
 from uuid import uuid4
 
+from app.abuse.rate_limiter import check as rate_limit_check
 from app.listing.store import InMemoryItemPostStore, ItemPost, now_utc
 from app.moderation.service import is_rejected
 from app.shared.errors import (
@@ -21,6 +22,7 @@ MAX_PAGE_SIZE = 100
 def create_draft(author_id: str, *, post_type: str, category: str, title: str,
                  public_description: str, school: str, campus: str | None,
                  area: str | None) -> ItemPost:
+    rate_limit_check(author_id, "post")
     normalized_type = _normalize_type(post_type)
     _validate(normalized_type, category, title, public_description, school, campus, area)
     now = now_utc()

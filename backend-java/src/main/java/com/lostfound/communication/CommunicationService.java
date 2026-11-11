@@ -1,5 +1,6 @@
 package com.lostfound.communication;
 
+import com.lostfound.abuse.RateLimiter;
 import com.lostfound.account.InMemoryUserStore;
 import com.lostfound.claim.Claim;
 import com.lostfound.claim.ClaimStore;
@@ -42,15 +43,17 @@ public class CommunicationService {
     private final ClaimStore claimStore;
     private final ItemPostStore postStore;
     private final InMemoryUserStore userStore;
+    private final RateLimiter rateLimiter;
 
     public CommunicationService(BlockStore blockStore, MessageStore messageStore,
                                 ClaimStore claimStore, ItemPostStore postStore,
-                                InMemoryUserStore userStore) {
+                                InMemoryUserStore userStore, RateLimiter rateLimiter) {
         this.blockStore = blockStore;
         this.messageStore = messageStore;
         this.claimStore = claimStore;
         this.postStore = postStore;
         this.userStore = userStore;
+        this.rateLimiter = rateLimiter;
     }
 
     public BlockRelation block(String blockerId, BlockCreate input) {
@@ -91,6 +94,7 @@ public class CommunicationService {
     }
 
     public Message send(String senderId, String conversationId, MessageCreate input) {
+        rateLimiter.check(senderId, "message");
         Claim claim = claimStore.findById(conversationId);
         if (claim == null) {
             throw new BusinessException(ErrorCode.NOT_FOUND);

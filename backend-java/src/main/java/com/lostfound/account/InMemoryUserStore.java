@@ -53,6 +53,25 @@ public class InMemoryUserStore {
         return updated;
     }
 
+    public UserAccount restrict(String userId) {
+        return setStatus(userId, "RESTRICTED");
+    }
+
+    public UserAccount unrestrict(String userId) {
+        return setStatus(userId, "ACTIVE");
+    }
+
+    private UserAccount setStatus(String userId, String status) {
+        UserAccount user = findById(userId);
+        if (user == null) {
+            return null;
+        }
+        UserAccount updated = new UserAccount(user.id(), user.openid(), status,
+            user.agreementAcceptedAt(), user.school(), user.campus());
+        byOpenid.put(user.openid(), updated);
+        return updated;
+    }
+
     /** 仅供测试重置状态。 */
     public void clear() {
         byOpenid.clear();

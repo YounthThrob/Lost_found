@@ -1,5 +1,6 @@
 package com.lostfound.claim;
 
+import com.lostfound.abuse.RateLimiter;
 import com.lostfound.listing.ItemPost;
 import com.lostfound.listing.ItemPostStore;
 import com.lostfound.shared.BusinessException;
@@ -27,13 +28,16 @@ public class ClaimService {
 
     private final ClaimStore store;
     private final ItemPostStore postStore;
+    private final RateLimiter rateLimiter;
 
-    public ClaimService(ClaimStore store, ItemPostStore postStore) {
+    public ClaimService(ClaimStore store, ItemPostStore postStore, RateLimiter rateLimiter) {
         this.store = store;
         this.postStore = postStore;
+        this.rateLimiter = rateLimiter;
     }
 
     public Claim submit(String applicantId, String postId, ClaimCreate input) {
+        rateLimiter.check(applicantId, "claim");
         ItemPost post = postStore.findById(postId);
         if (post == null) {
             throw new BusinessException(ErrorCode.NOT_FOUND);

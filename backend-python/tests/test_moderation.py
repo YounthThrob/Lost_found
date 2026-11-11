@@ -1,6 +1,7 @@
 import pytest
 from fastapi.testclient import TestClient
 
+from app.abuse import rate_limiter
 from app.account import service as account_service
 from app.account.store import InMemoryUserStore
 from app.listing import service as listing_service
@@ -33,6 +34,7 @@ def fresh_stores():
     account_service._store = InMemoryUserStore()
     listing_service._store = InMemoryItemPostStore()
     moderation_service._store = InMemoryReportStore()
+    rate_limiter.clear()
     yield
 
 

@@ -1,0 +1,10 @@
+# 频率限制（MVP 固定窗口）。共同事实源。
+# 按用户维度（userId）、按操作独立计数；窗口内达到上限即返回对应限流错误码。
+# 认领超限返回 CLAIM_RATE_LIMITED，其余返回 RATE_LIMITED。
+rate-limits:
+  window_seconds: 60
+  limits:
+    claim: 20
+    post: 20
+    message: 30
+    report: 20

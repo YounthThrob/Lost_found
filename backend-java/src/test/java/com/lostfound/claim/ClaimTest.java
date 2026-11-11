@@ -1,6 +1,7 @@
 package com.lostfound.claim;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.lostfound.abuse.RateLimiter;
 import com.lostfound.account.InMemoryUserStore;
 import com.lostfound.listing.ItemPostStore;
 import org.junit.jupiter.api.BeforeEach;
@@ -42,11 +43,15 @@ class ClaimTest {
     @Autowired
     private ClaimStore claimStore;
 
+    @Autowired
+    private RateLimiter rateLimiter;
+
     @BeforeEach
     void reset() {
         userStore.clear();
         postStore.clear();
         claimStore.clear();
+        rateLimiter.clear();
     }
 
     private String loginToken(String code) throws Exception {

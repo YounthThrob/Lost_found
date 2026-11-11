@@ -11,6 +11,9 @@ error-codes:
   AGREEMENT_NOT_ACCEPTED:
     http_status: 403
     message: 未确认用户协议，禁止发布/留言/认领
+  ACCOUNT_RESTRICTED:
+    http_status: 403
+    message: 账户处于限制状态，禁止发布/留言/认领
   VALIDATION_FAILED:
     http_status: 422
     message: 参数校验失败
@@ -35,6 +38,12 @@ error-codes:
   HANDOVER_ALREADY_EXISTS:
     http_status: 409
     message: 该申请已存在交接安排
+  RATE_LIMITED:
+    http_status: 429
+    message: 操作过于频繁，请稍后再试
+  CLAIM_RATE_LIMITED:
+    http_status: 429
+    message: 认领申请过于频繁，请稍后再试
   INTERNAL_ERROR:
     http_status: 500
     message: 服务内部错误

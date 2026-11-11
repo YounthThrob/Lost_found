@@ -1,5 +1,6 @@
 from uuid import uuid4
 
+from app.abuse.rate_limiter import check as rate_limit_check
 from app.account import service as account_service
 from app.claim import service as claim_service
 from app.communication.store import (
@@ -73,6 +74,7 @@ def list_blocks(blocker_id: str, page: int, page_size: int) -> dict:
 
 
 def send(sender_id: str, conversation_id: str, *, type_: str | None, content: str | None) -> Message:
+    rate_limit_check(sender_id, "message")
     claim = _claims().find_by_id(conversation_id)
     if claim is None:
         raise BusinessError(NOT_FOUND)

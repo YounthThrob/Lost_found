@@ -1,5 +1,6 @@
 package com.lostfound.listing;
 
+import com.lostfound.abuse.RateLimiter;
 import com.lostfound.moderation.ContentModerator;
 import com.lostfound.shared.BusinessException;
 import com.lostfound.shared.ErrorCode;
@@ -34,13 +35,16 @@ public class ListingService {
 
     private final ItemPostStore store;
     private final ContentModerator moderator;
+    private final RateLimiter rateLimiter;
 
-    public ListingService(ItemPostStore store, ContentModerator moderator) {
+    public ListingService(ItemPostStore store, ContentModerator moderator, RateLimiter rateLimiter) {
         this.store = store;
         this.moderator = moderator;
+        this.rateLimiter = rateLimiter;
     }
 
     public ItemPost createDraft(String authorId, ItemPostCreate input) {
+        rateLimiter.check(authorId, "post");
         String type = normalizeType(input.type());
         validate(type, input.category(), input.title(), input.publicDescription(), input.school(),
             input.campus(), input.area());

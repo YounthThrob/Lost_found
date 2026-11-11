@@ -1,5 +1,6 @@
 package com.lostfound.moderation;
 
+import com.lostfound.abuse.RateLimiter;
 import com.lostfound.shared.BusinessException;
 import com.lostfound.shared.ErrorCode;
 import org.springframework.stereotype.Service;
@@ -26,12 +27,15 @@ public class ReportService {
     private static final int MAX_PAGE_SIZE = 100;
 
     private final ReportStore store;
+    private final RateLimiter rateLimiter;
 
-    public ReportService(ReportStore store) {
+    public ReportService(ReportStore store, RateLimiter rateLimiter) {
         this.store = store;
+        this.rateLimiter = rateLimiter;
     }
 
     public Report createReport(String reporterId, ReportCreate request) {
+        rateLimiter.check(reporterId, "report");
         String targetType = request.targetType() == null ? null : request.targetType().trim();
         if (!"POST".equals(targetType) && !"USER".equals(targetType)) {
             throw new BusinessException(ErrorCode.VALIDATION_FAILED);

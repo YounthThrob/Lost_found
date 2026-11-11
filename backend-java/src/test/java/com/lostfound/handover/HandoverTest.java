@@ -1,6 +1,7 @@
 package com.lostfound.handover;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.lostfound.abuse.RateLimiter;
 import com.lostfound.account.InMemoryUserStore;
 import com.lostfound.claim.ClaimStore;
 import com.lostfound.listing.ItemPostStore;
@@ -43,12 +44,16 @@ class HandoverTest {
     @Autowired
     private HandoverStore handoverStore;
 
+    @Autowired
+    private RateLimiter rateLimiter;
+
     @BeforeEach
     void reset() {
         userStore.clear();
         postStore.clear();
         claimStore.clear();
         handoverStore.clear();
+        rateLimiter.clear();
     }
 
     private String loginToken(String code) throws Exception {

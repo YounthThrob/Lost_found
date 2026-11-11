@@ -1,5 +1,6 @@
 from uuid import uuid4
 
+from app.abuse.rate_limiter import check as rate_limit_check
 from app.moderation.store import InMemoryReportStore, Report, now_utc
 from app.shared.errors import VALIDATION_FAILED, BusinessError
 
@@ -23,6 +24,7 @@ def is_rejected(title: str | None, description: str | None) -> bool:
 
 def create_report(reporter_id: str, *, target_type: str | None, target_id: str | None,
                   reason: str | None, description: str | None) -> Report:
+    rate_limit_check(reporter_id, "report")
     tt = target_type.strip() if target_type else None
     if tt not in ("POST", "USER"):
         raise BusinessError(VALIDATION_FAILED)

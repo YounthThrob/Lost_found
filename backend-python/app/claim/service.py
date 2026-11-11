@@ -1,5 +1,6 @@
 from uuid import uuid4
 
+from app.abuse.rate_limiter import check as rate_limit_check
 from app.claim.store import Claim, InMemoryClaimStore, now_utc
 from app.listing import service as listing_service
 from app.listing.store import ItemPost
@@ -25,6 +26,7 @@ def _posts():
 
 
 def submit(applicant_id: str, post_id: str, *, statement: str | None) -> Claim:
+    rate_limit_check(applicant_id, "claim")
     post = _posts().find_by_id(post_id)
     if post is None:
         raise BusinessError(NOT_FOUND)

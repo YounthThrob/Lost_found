@@ -19,6 +19,9 @@ public class AgreementGuard {
         if (user == null || !user.agreementAccepted()) {
             throw new BusinessException(ErrorCode.AGREEMENT_NOT_ACCEPTED);
         }
+        if ("RESTRICTED".equals(user.status())) {
+            throw new BusinessException(ErrorCode.ACCOUNT_RESTRICTED);
+        }
         return user;
     }
 }

@@ -1,6 +1,7 @@
 package com.lostfound.moderation;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.lostfound.abuse.RateLimiter;
 import com.lostfound.account.InMemoryUserStore;
 import com.lostfound.listing.ItemPostStore;
 import org.junit.jupiter.api.BeforeEach;
@@ -42,11 +43,15 @@ class ContentModerationTest {
     @Autowired
     private ReportStore reportStore;
 
+    @Autowired
+    private RateLimiter rateLimiter;
+
     @BeforeEach
     void reset() {
         userStore.clear();
         postStore.clear();
         reportStore.clear();
+        rateLimiter.clear();
     }
 
     private String loginToken(String code) throws Exception {

@@ -5,6 +5,7 @@ public enum ErrorCode {
     SESSION_EXPIRED(401, "会话已过期，请重新登录"),
     WECHAT_CODE_INVALID(401, "微信登录凭证无效或已过期"),
     AGREEMENT_NOT_ACCEPTED(403, "未确认用户协议，禁止发布/留言/认领"),
+    ACCOUNT_RESTRICTED(403, "账户处于限制状态，禁止发布/留言/认领"),
     VALIDATION_FAILED(422, "参数校验失败"),
     NOT_FOUND(404, "资源不存在或无权访问"),
     INVALID_STATE_TRANSITION(409, "非法状态迁移"),
@@ -13,6 +14,8 @@ public enum ErrorCode {
     HANDOVER_CONFLICT(409, "已有申请进入待交接"),
     BLOCKED(403, "已被对方拉黑，无法继续发送消息或申请"),
     HANDOVER_ALREADY_EXISTS(409, "该申请已存在交接安排"),
+    RATE_LIMITED(429, "操作过于频繁，请稍后再试"),
+    CLAIM_RATE_LIMITED(429, "认领申请过于频繁，请稍后再试"),
     INTERNAL_ERROR(500, "服务内部错误");
 
     private final int httpStatus;

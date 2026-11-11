@@ -1,6 +1,7 @@
 package com.lostfound.communication;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.lostfound.abuse.RateLimiter;
 import com.lostfound.account.InMemoryUserStore;
 import com.lostfound.claim.ClaimStore;
 import com.lostfound.listing.ItemPostStore;
@@ -47,6 +48,9 @@ class CommunicationTest {
     @Autowired
     private MessageStore messageStore;
 
+    @Autowired
+    private RateLimiter rateLimiter;
+
     @BeforeEach
     void reset() {
         userStore.clear();
@@ -54,6 +58,7 @@ class CommunicationTest {
         claimStore.clear();
         blockStore.clear();
         messageStore.clear();
+        rateLimiter.clear();
     }
 
     private String loginToken(String code) throws Exception {
