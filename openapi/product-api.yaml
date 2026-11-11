@@ -575,6 +575,167 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
+  /posts/{postId}/clues:
+    post:
+      summary: 向寻物信息提交线索
+      operationId: createClue
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: postId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ClueCreate"
+      responses:
+        "200":
+          description: 线索提交成功，status 为 SUBMITTED（命中违禁词则为 REJECTED）
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ClueResponse"
+        "401":
+          description: 会话无效或已过期
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "403":
+          description: 未确认用户协议
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: 信息不存在或无权访问
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "409":
+          description: 招领信息不可提交线索（CLUE_NOT_ALLOWED）
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "422":
+          description: 线索内容为空或超长
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "429":
+          description: 提交线索过于频繁
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+    get:
+      summary: 失主查看收到的待处理线索
+      operationId: listPostClues
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: postId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: page
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+        - name: pageSize
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 20
+      responses:
+        "200":
+          description: 待处理线索列表（分页）
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ClueListResponse"
+        "401":
+          description: 会话无效或已过期
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: 信息不存在或无权访问
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "422":
+          description: 分页参数非法
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  /clues/{clueId}/decide:
+    post:
+      summary: 失主标记线索有效或无效
+      operationId: decideClue
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: clueId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ClueDecide"
+      responses:
+        "200":
+          description: 判定成功，status 为 ACCEPTED 或 CLOSED
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ClueResponse"
+        "401":
+          description: 会话无效或已过期
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: 线索不存在或无权访问
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "409":
+          description: 非法状态迁移（仅 SUBMITTED 可判定）
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "422":
+          description: 判定值非法
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
   /claims/{claimId}/request-info:
     post:
       summary: 请求补充信息
@@ -1446,6 +1607,87 @@ components:
       properties:
         data:
           $ref: "#/components/schemas/ClaimListData"
+        requestId:
+          type: string
+        timestamp:
+          type: string
+          format: date-time
+    ClueCreate:
+      type: object
+      required:
+        - content
+      properties:
+        content:
+          type: string
+          description: 线索说明（非空，≤2000 字符），仅对失主及运营人员可见
+    ClueDecide:
+      type: object
+      required:
+        - decision
+      properties:
+        decision:
+          type: string
+          enum: [VALID, INVALID]
+          description: VALID=标记有效，INVALID=标记无效
+    ClueView:
+      type: object
+      required:
+        - id
+        - postId
+        - providerId
+        - content
+        - status
+        - createdAt
+      properties:
+        id:
+          type: string
+        postId:
+          type: string
+        providerId:
+          type: string
+        content:
+          type: string
+        status:
+          type: string
+          enum: [SUBMITTED, ACCEPTED, CLOSED, REJECTED, EXPIRED]
+        createdAt:
+          type: string
+          format: date-time
+    ClueListData:
+      type: object
+      required:
+        - items
+        - pagination
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/ClueView"
+        pagination:
+          $ref: "#/components/schemas/Pagination"
+    ClueResponse:
+      type: object
+      required:
+        - data
+        - requestId
+        - timestamp
+      properties:
+        data:
+          $ref: "#/components/schemas/ClueView"
+        requestId:
+          type: string
+        timestamp:
+          type: string
+          format: date-time
+    ClueListResponse:
+      type: object
+      required:
+        - data
+        - requestId
+        - timestamp
+      properties:
+        data:
+          $ref: "#/components/schemas/ClueListData"
         requestId:
           type: string
         timestamp:

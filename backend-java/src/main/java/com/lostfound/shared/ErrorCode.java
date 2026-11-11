@@ -11,6 +11,7 @@ public enum ErrorCode {
     INVALID_STATE_TRANSITION(409, "非法状态迁移"),
     CLAIM_DUPLICATE(409, "同一物品已存在进行中的申请"),
     POST_NOT_CLAIMABLE(409, "信息当前不可申请认领"),
+    CLUE_NOT_ALLOWED(409, "仅展示中的寻物信息可提交线索"),
     HANDOVER_CONFLICT(409, "已有申请进入待交接"),
     BLOCKED(403, "已被对方拉黑，无法继续发送消息或申请"),
     HANDOVER_ALREADY_EXISTS(409, "该申请已存在交接安排"),

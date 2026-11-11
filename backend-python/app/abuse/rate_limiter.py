@@ -10,6 +10,7 @@ LIMITS = {
     "post": 20,
     "message": 30,
     "report": 20,
+    "clue": 20,
 }
 
 _counters: dict[str, tuple[int, int]] = {}  # key -> (window, count)

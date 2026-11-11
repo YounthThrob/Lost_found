@@ -29,6 +29,9 @@ error-codes:
   POST_NOT_CLAIMABLE:
     http_status: 409
     message: 信息当前不可申请认领
+  CLUE_NOT_ALLOWED:
+    http_status: 409
+    message: 仅展示中的寻物信息可提交线索
   HANDOVER_CONFLICT:
     http_status: 409
     message: 已有申请进入待交接

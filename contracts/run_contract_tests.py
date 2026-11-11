@@ -116,6 +116,17 @@ EXPECTED = {
     "handover_confirm_cancelled": {"status": 409, "error_code": "INVALID_STATE_TRANSITION"},
     "claim_rate_limited": {"status": 429, "error_code": "CLAIM_RATE_LIMITED", "requests_before_429": 20},
     "post_rate_limited": {"status": 429, "error_code": "RATE_LIMITED", "requests_before_429": 20},
+    "clue_submit": {"status": 200, "clue_status": "SUBMITTED"},
+    "clue_submit_found": {"status": 409, "error_code": "CLUE_NOT_ALLOWED"},
+    "clue_submit_closed": {"status": 404, "error_code": "NOT_FOUND"},
+    "clue_submit_banned": {"status": 200, "clue_status": "REJECTED"},
+    "clue_list_owner": {"status": 200, "total": 1},
+    "clue_list_nonowner": {"status": 404, "error_code": "NOT_FOUND"},
+    "clue_decide_valid": {"status": 200, "clue_status": "ACCEPTED"},
+    "clue_decide_again": {"status": 409, "error_code": "INVALID_STATE_TRANSITION"},
+    "clue_decide_invalid": {"status": 200, "clue_status": "CLOSED"},
+    "clue_decide_nonowner": {"status": 404, "error_code": "NOT_FOUND"},
+    "clue_rate_limited": {"status": 429, "error_code": "RATE_LIMITED", "requests_before_429": 20},
 }
 
 
@@ -471,6 +482,84 @@ def probe(base: str) -> dict:
         "error_code": r39.json().get("error", {}).get("code"),
     }
 
+    # ---- clue-tips ----
+    rc1 = httpx.post(base + f"/api/v1/posts/{lost_id}/clues", headers=headers2,
+                     json={"content": "我在图书馆门口看到过这张卡"})
+    sig["clue_submit"] = {
+        "status": rc1.status_code,
+        "clue_status": rc1.json().get("data", {}).get("status"),
+    }
+    clue_id = rc1.json()["data"]["id"]
+
+    found_clue_id = httpx.post(base + "/api/v1/posts", headers=headers, json=FOUND_BODY).json()["data"]["id"]
+    httpx.post(base + f"/api/v1/posts/{found_clue_id}/publish", headers=headers)
+    rc2 = httpx.post(base + f"/api/v1/posts/{found_clue_id}/clues", headers=headers2,
+                     json={"content": "线索不该给招领"})
+    sig["clue_submit_found"] = {
+        "status": rc2.status_code,
+        "error_code": rc2.json().get("error", {}).get("code"),
+    }
+
+    rc3 = httpx.post(base + f"/api/v1/posts/{post_id}/clues", headers=headers2,
+                     json={"content": "线索不该给已关闭信息"})
+    sig["clue_submit_closed"] = {
+        "status": rc3.status_code,
+        "error_code": rc3.json().get("error", {}).get("code"),
+    }
+
+    banned_clue_post = httpx.post(base + "/api/v1/posts", headers=headers, json=POST_BODY).json()["data"]["id"]
+    httpx.post(base + f"/api/v1/posts/{banned_clue_post}/publish", headers=headers)
+    rc4 = httpx.post(base + f"/api/v1/posts/{banned_clue_post}/clues", headers=headers2,
+                     json={"content": "先转账给我再告诉你"})
+    sig["clue_submit_banned"] = {
+        "status": rc4.status_code,
+        "clue_status": rc4.json().get("data", {}).get("status"),
+    }
+
+    rc5 = httpx.get(base + f"/api/v1/posts/{lost_id}/clues", headers=headers)
+    sig["clue_list_owner"] = {
+        "status": rc5.status_code,
+        "total": rc5.json().get("data", {}).get("pagination", {}).get("total"),
+    }
+
+    rc6 = httpx.get(base + f"/api/v1/posts/{lost_id}/clues", headers=headers2)
+    sig["clue_list_nonowner"] = {
+        "status": rc6.status_code,
+        "error_code": rc6.json().get("error", {}).get("code"),
+    }
+
+    rc7 = httpx.post(base + f"/api/v1/clues/{clue_id}/decide", headers=headers,
+                     json={"decision": "VALID"})
+    sig["clue_decide_valid"] = {
+        "status": rc7.status_code,
+        "clue_status": rc7.json().get("data", {}).get("status"),
+    }
+
+    rc8 = httpx.post(base + f"/api/v1/clues/{clue_id}/decide", headers=headers,
+                     json={"decision": "INVALID"})
+    sig["clue_decide_again"] = {
+        "status": rc8.status_code,
+        "error_code": rc8.json().get("error", {}).get("code"),
+    }
+
+    clue2_id = httpx.post(base + f"/api/v1/posts/{lost_id}/clues", headers=headers2,
+                          json={"content": "另一条线索"}).json()["data"]["id"]
+    rc9 = httpx.post(base + f"/api/v1/clues/{clue2_id}/decide", headers=headers,
+                     json={"decision": "INVALID"})
+    sig["clue_decide_invalid"] = {
+        "status": rc9.status_code,
+        "clue_status": rc9.json().get("data", {}).get("status"),
+    }
+
+    clue3_id = httpx.post(base + f"/api/v1/posts/{lost_id}/clues", headers=headers2,
+                          json={"content": "第三条线索"}).json()["data"]["id"]
+    rc10 = httpx.post(base + f"/api/v1/clues/{clue3_id}/decide", headers=headers2,
+                      json={"decision": "VALID"})
+    sig["clue_decide_nonowner"] = {
+        "status": rc10.status_code,
+        "error_code": rc10.json().get("error", {}).get("code"),
+    }
+
     # ---- safe-communication ----
     # 会话 = 已接受的认领申请 claim_id；参与者为发布者(user1) 与 申请人(user2)
     applicant2_id = httpx.get(base + f"/api/v1/posts/{found_id}/claims", headers=headers) \
@@ -700,6 +789,20 @@ def probe(base: str) -> dict:
         "status": post_resp.status_code,
         "error_code": post_resp.json().get("error", {}).get("code"),
         "requests_before_429": post_before,
+    }
+
+    clue_before = 0
+    clue_resp = None
+    for _ in range(25):
+        clue_resp = httpx.post(base + "/api/v1/posts/dummy-post/clues", headers=headers4,
+                               json={"content": "x"})
+        if clue_resp.status_code == 429:
+            break
+        clue_before += 1
+    sig["clue_rate_limited"] = {
+        "status": clue_resp.status_code,
+        "error_code": clue_resp.json().get("error", {}).get("code"),
+        "requests_before_429": clue_before,
     }
     return sig
 

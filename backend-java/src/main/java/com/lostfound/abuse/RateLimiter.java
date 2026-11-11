@@ -17,7 +17,8 @@ public class RateLimiter {
         "claim", 20,
         "post", 20,
         "message", 30,
-        "report", 20);
+        "report", 20,
+        "clue", 20);
 
     private static final class Counter {
         long window;
