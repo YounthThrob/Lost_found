@@ -12,6 +12,7 @@ public enum ErrorCode {
     POST_NOT_CLAIMABLE(409, "信息当前不可申请认领"),
     HANDOVER_CONFLICT(409, "已有申请进入待交接"),
     BLOCKED(403, "已被对方拉黑，无法继续发送消息或申请"),
+    HANDOVER_ALREADY_EXISTS(409, "该申请已存在交接安排"),
     INTERNAL_ERROR(500, "服务内部错误");
 
     private final int httpStatus;

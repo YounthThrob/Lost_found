@@ -32,6 +32,9 @@ error-codes:
   BLOCKED:
     http_status: 403
     message: 已被对方拉黑，无法继续发送消息或申请
+  HANDOVER_ALREADY_EXISTS:
+    http_status: 409
+    message: 该申请已存在交接安排
   INTERNAL_ERROR:
     http_status: 500
     message: 服务内部错误

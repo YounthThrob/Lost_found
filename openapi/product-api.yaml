@@ -897,6 +897,129 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
+  /handovers:
+    post:
+      summary: 创建交接安排
+      operationId: createHandover
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/HandoverCreate"
+      responses:
+        "200":
+          description: 创建成功，status 为 PENDING
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HandoverResponse"
+        "401":
+          description: 会话无效或已过期
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "403":
+          description: 未确认用户协议
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: 申请不存在或无权访问
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "409":
+          description: 申请未接受或已存在交接安排（INVALID_STATE_TRANSITION / HANDOVER_ALREADY_EXISTS）
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "422":
+          description: 时间窗口或公共区域为空或超长
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  /handovers/{handoverId}/confirm:
+    post:
+      summary: 当前用户确认交接完成
+      operationId: confirmHandover
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: handoverId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: 确认成功，返回更新后的交接
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HandoverResponse"
+        "401":
+          description: 会话无效或已过期
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: 交接不存在或无权访问
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "409":
+          description: 非法状态迁移（仅 PENDING 可确认）
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  /handovers/{handoverId}/cancel:
+    post:
+      summary: 终止交接
+      operationId: cancelHandover
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: handoverId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: 终止成功，返回更新后的交接
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HandoverResponse"
+        "401":
+          description: 会话无效或已过期
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: 交接不存在或无权访问
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "409":
+          description: 非法状态迁移（仅 PENDING 可终止）
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
 components:
   securitySchemes:
     bearerAuth:
@@ -1094,7 +1217,7 @@ components:
           type: ["string", "null"]
         status:
           type: string
-          enum: [DRAFT, PENDING_REVIEW, PUBLISHED, REJECTED, CLOSED, VERIFYING, PENDING_HANDOVER]
+          enum: [DRAFT, PENDING_REVIEW, PUBLISHED, REJECTED, CLOSED, VERIFYING, PENDING_HANDOVER, COMPLETED]
         authorId:
           type: string
         createdAt:
@@ -1279,7 +1402,7 @@ components:
           type: string
         status:
           type: string
-          enum: [SUBMITTED, NEEDS_MORE_INFO, ACCEPTED, REJECTED]
+          enum: [SUBMITTED, NEEDS_MORE_INFO, ACCEPTED, REJECTED, COMPLETED, CANCELLED]
         version:
           type: integer
         createdAt:
@@ -1474,6 +1597,72 @@ components:
       properties:
         data:
           $ref: "#/components/schemas/MessageListData"
+        requestId:
+          type: string
+        timestamp:
+          type: string
+          format: date-time
+    HandoverCreate:
+      type: object
+      required:
+        - claimId
+        - timeWindow
+        - publicPlace
+      properties:
+        claimId:
+          type: string
+          description: 已接受认领申请的 ID
+        timeWindow:
+          type: string
+          description: 交接时间窗口（非空，≤200 字符）
+        publicPlace:
+          type: string
+          description: 交接公共区域（非空，≤200 字符）
+    HandoverView:
+      type: object
+      required:
+        - id
+        - claimId
+        - proposerId
+        - timeWindow
+        - publicPlace
+        - status
+        - createdAt
+      properties:
+        id:
+          type: string
+        claimId:
+          type: string
+        proposerId:
+          type: string
+          description: 发起交接的用户 ID（UUID）
+        timeWindow:
+          type: string
+        publicPlace:
+          type: string
+        ownerConfirmedAt:
+          type: string
+          format: date-time
+          nullable: true
+        claimantConfirmedAt:
+          type: string
+          format: date-time
+          nullable: true
+        status:
+          type: string
+          enum: [PENDING, COMPLETED, CANCELLED]
+        createdAt:
+          type: string
+          format: date-time
+    HandoverResponse:
+      type: object
+      required:
+        - data
+        - requestId
+        - timestamp
+      properties:
+        data:
+          $ref: "#/components/schemas/HandoverView"
         requestId:
           type: string
         timestamp:

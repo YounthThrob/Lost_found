@@ -84,6 +84,19 @@ EXPECTED = {
     "message_not_accepted": {"status": 409, "error_code": "INVALID_STATE_TRANSITION"},
     "message_invalid_type": {"status": 422, "error_code": "VALIDATION_FAILED"},
     "message_empty_content": {"status": 422, "error_code": "VALIDATION_FAILED"},
+    "handover_create": {"status": 200, "handover_status": "PENDING", "proposer_is_owner": True},
+    "handover_duplicate": {"status": 409, "error_code": "HANDOVER_ALREADY_EXISTS"},
+    "handover_nonparticipant": {"status": 404, "error_code": "NOT_FOUND"},
+    "handover_not_accepted": {"status": 409, "error_code": "INVALID_STATE_TRANSITION"},
+    "handover_empty_field": {"status": 422, "error_code": "VALIDATION_FAILED"},
+    "handover_owner_confirm": {"status": 200, "handover_status": "PENDING", "owner_confirmed": True, "claimant_confirmed": False},
+    "handover_both_confirm": {"status": 200, "handover_status": "COMPLETED"},
+    "handover_claim_completed": {"status": 200, "claim_status": "COMPLETED"},
+    "handover_post_completed": {"status": 200, "post_status": "COMPLETED"},
+    "handover_cancel": {"status": 200, "handover_status": "CANCELLED"},
+    "handover_cancel_claim": {"status": 200, "claim_status": "CANCELLED"},
+    "handover_cancel_post_published": {"status": 200, "post_status": "PUBLISHED"},
+    "handover_confirm_cancelled": {"status": 409, "error_code": "INVALID_STATE_TRANSITION"},
 }
 
 
@@ -494,6 +507,108 @@ def probe(base: str) -> dict:
     sig["message_empty_content"] = {
         "status": r54.status_code,
         "error_code": r54.json().get("error", {}).get("code"),
+    }
+
+    # ---- item-handover ----
+    def new_accepted_claim(applicant_headers):
+        pid = httpx.post(base + "/api/v1/posts", headers=headers, json=FOUND_BODY).json()["data"]["id"]
+        httpx.post(base + f"/api/v1/posts/{pid}/publish", headers=headers)
+        cid = httpx.post(base + f"/api/v1/posts/{pid}/claims", headers=applicant_headers,
+                         json={"statement": "我的校园卡"}).json()["data"]["id"]
+        httpx.post(base + f"/api/v1/claims/{cid}/accept", headers=headers)
+        return pid, cid
+
+    hp_id, hc_id = new_accepted_claim(headers2)
+    r55 = httpx.post(base + "/api/v1/handovers", headers=headers,
+                     json={"claimId": hc_id, "timeWindow": "明天下午3点", "publicPlace": "图书馆一楼"})
+    sig["handover_create"] = {
+        "status": r55.status_code,
+        "handover_status": r55.json().get("data", {}).get("status"),
+        "proposer_is_owner": r55.json().get("data", {}).get("proposerId") == me_id,
+    }
+    handover_id = r55.json()["data"]["id"]
+
+    r56 = httpx.post(base + "/api/v1/handovers", headers=headers2,
+                     json={"claimId": hc_id, "timeWindow": "后天", "publicPlace": "校门口"})
+    sig["handover_duplicate"] = {
+        "status": r56.status_code,
+        "error_code": r56.json().get("error", {}).get("code"),
+    }
+
+    r57 = httpx.post(base + "/api/v1/handovers", headers=headers3,
+                     json={"claimId": hc_id, "timeWindow": "明天", "publicPlace": "校门口"})
+    sig["handover_nonparticipant"] = {
+        "status": r57.status_code,
+        "error_code": r57.json().get("error", {}).get("code"),
+    }
+
+    r58 = httpx.post(base + "/api/v1/handovers", headers=headers3,
+                     json={"claimId": claim_b, "timeWindow": "明天", "publicPlace": "校门口"})
+    sig["handover_not_accepted"] = {
+        "status": r58.status_code,
+        "error_code": r58.json().get("error", {}).get("code"),
+    }
+
+    _, hc2_id = new_accepted_claim(headers2)
+    r59 = httpx.post(base + "/api/v1/handovers", headers=headers,
+                     json={"claimId": hc2_id, "timeWindow": "", "publicPlace": "校门口"})
+    sig["handover_empty_field"] = {
+        "status": r59.status_code,
+        "error_code": r59.json().get("error", {}).get("code"),
+    }
+
+    r60 = httpx.post(base + f"/api/v1/handovers/{handover_id}/confirm", headers=headers)
+    sig["handover_owner_confirm"] = {
+        "status": r60.status_code,
+        "handover_status": r60.json().get("data", {}).get("status"),
+        "owner_confirmed": r60.json().get("data", {}).get("ownerConfirmedAt") is not None,
+        "claimant_confirmed": r60.json().get("data", {}).get("claimantConfirmedAt") is not None,
+    }
+
+    r61 = httpx.post(base + f"/api/v1/handovers/{handover_id}/confirm", headers=headers2)
+    sig["handover_both_confirm"] = {
+        "status": r61.status_code,
+        "handover_status": r61.json().get("data", {}).get("status"),
+    }
+
+    r62 = httpx.get(base + f"/api/v1/posts/{hp_id}/claims", headers=headers)
+    sig["handover_claim_completed"] = {
+        "status": r62.status_code,
+        "claim_status": r62.json().get("data", {}).get("items", [{}])[0].get("status"),
+    }
+
+    r63 = httpx.get(base + f"/api/v1/posts/{hp_id}", headers=headers)
+    sig["handover_post_completed"] = {
+        "status": r63.status_code,
+        "post_status": r63.json().get("data", {}).get("status"),
+    }
+
+    hp2_id, hc3_id = new_accepted_claim(headers2)
+    h2_id = httpx.post(base + "/api/v1/handovers", headers=headers,
+                       json={"claimId": hc3_id, "timeWindow": "明天", "publicPlace": "校门口"}) \
+        .json()["data"]["id"]
+    r64 = httpx.post(base + f"/api/v1/handovers/{h2_id}/cancel", headers=headers2)
+    sig["handover_cancel"] = {
+        "status": r64.status_code,
+        "handover_status": r64.json().get("data", {}).get("status"),
+    }
+
+    r65 = httpx.get(base + f"/api/v1/posts/{hp2_id}/claims", headers=headers)
+    sig["handover_cancel_claim"] = {
+        "status": r65.status_code,
+        "claim_status": r65.json().get("data", {}).get("items", [{}])[0].get("status"),
+    }
+
+    r66 = httpx.get(base + f"/api/v1/posts/{hp2_id}", headers=headers)
+    sig["handover_cancel_post_published"] = {
+        "status": r66.status_code,
+        "post_status": r66.json().get("data", {}).get("status"),
+    }
+
+    r67 = httpx.post(base + f"/api/v1/handovers/{h2_id}/confirm", headers=headers)
+    sig["handover_confirm_cancelled"] = {
+        "status": r67.status_code,
+        "error_code": r67.json().get("error", {}).get("code"),
     }
     return sig
 
