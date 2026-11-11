@@ -135,6 +135,21 @@ EXPECTED = {
     "bookmark_delete": {"status": 200},
     "bookmark_list_after_delete": {"status": 200, "total": 0},
     "bookmark_delete_idempotent": {"status": 200},
+    "operator_non_operator_denied": {"status": 403, "error_code": "OPERATOR_REQUIRED"},
+    "operator_remove": {"status": 200, "post_status": "REMOVED"},
+    "operator_remove_hidden": {"status": 200, "removed_visible": False},
+    "operator_remove_nonpublic": {"status": 409, "error_code": "INVALID_STATE_TRANSITION"},
+    "operator_restrict": {"status": 200, "user_status": "RESTRICTED"},
+    "operator_restricted_blocked": {"status": 403, "error_code": "ACCOUNT_RESTRICTED"},
+    "operator_unrestrict": {"status": 200, "user_status": "ACTIVE"},
+    "operator_reports_list": {"status": 200, "total": 1},
+    "operator_audit_list": {
+        "status": 200,
+        "total": 3,
+        "event_types": ["POST_REMOVED", "USER_RESTRICTED", "USER_UNRESTRICTED"],
+        "all_have_reason": True,
+    },
+    "operator_empty_reason": {"status": 422, "error_code": "VALIDATION_FAILED"},
 }
 
 
@@ -857,6 +872,90 @@ def probe(base: str) -> dict:
         "error_code": clue_resp.json().get("error", {}).get("code"),
         "requests_before_429": clue_before,
     }
+
+    # ---- operations-management ----
+    operator_token = httpx.post(base + "/api/v1/session/wechat", json={"code": "operator-code"}) \
+        .json()["data"]["token"]
+    operator_headers = {"Authorization": "Bearer " + operator_token}
+
+    ro1 = httpx.post(base + "/api/v1/admin/users/some-user/restrict", headers=headers2,
+                     json={"reason": "违规"})
+    sig["operator_non_operator_denied"] = {
+        "status": ro1.status_code,
+        "error_code": ro1.json().get("error", {}).get("code"),
+    }
+
+    op_post = httpx.post(base + "/api/v1/posts", headers=headers, json=POST_BODY).json()["data"]["id"]
+    httpx.post(base + f"/api/v1/posts/{op_post}/publish", headers=headers)
+
+    ro2 = httpx.post(base + f"/api/v1/admin/posts/{op_post}/remove", headers=operator_headers,
+                     json={"reason": "违规信息"})
+    sig["operator_remove"] = {
+        "status": ro2.status_code,
+        "post_status": ro2.json().get("data", {}).get("status"),
+    }
+
+    ro3 = httpx.get(base + "/api/v1/posts", headers=headers)
+    visible_ids = [i.get("id") for i in ro3.json().get("data", {}).get("items", [])]
+    sig["operator_remove_hidden"] = {
+        "status": ro3.status_code,
+        "removed_visible": op_post in visible_ids,
+    }
+
+    closed_op_post = httpx.post(base + "/api/v1/posts", headers=headers, json=POST_BODY) \
+        .json()["data"]["id"]
+    httpx.post(base + f"/api/v1/posts/{closed_op_post}/publish", headers=headers)
+    httpx.post(base + f"/api/v1/posts/{closed_op_post}/close", headers=headers)
+    ro4 = httpx.post(base + f"/api/v1/admin/posts/{closed_op_post}/remove", headers=operator_headers,
+                     json={"reason": "x"})
+    sig["operator_remove_nonpublic"] = {
+        "status": ro4.status_code,
+        "error_code": ro4.json().get("error", {}).get("code"),
+    }
+
+    target_id = httpx.get(base + "/api/v1/me", headers=headers2).json()["data"]["id"]
+    ro5 = httpx.post(base + f"/api/v1/admin/users/{target_id}/restrict", headers=operator_headers,
+                     json={"reason": "违规"})
+    sig["operator_restrict"] = {
+        "status": ro5.status_code,
+        "user_status": ro5.json().get("data", {}).get("status"),
+    }
+
+    ro6 = httpx.post(base + "/api/v1/posts", headers=headers2, json=POST_BODY)
+    sig["operator_restricted_blocked"] = {
+        "status": ro6.status_code,
+        "error_code": ro6.json().get("error", {}).get("code"),
+    }
+
+    ro7 = httpx.post(base + f"/api/v1/admin/users/{target_id}/unrestrict", headers=operator_headers,
+                     json={"reason": "解除"})
+    sig["operator_unrestrict"] = {
+        "status": ro7.status_code,
+        "user_status": ro7.json().get("data", {}).get("status"),
+    }
+
+    ro8 = httpx.get(base + "/api/v1/admin/reports", headers=operator_headers)
+    sig["operator_reports_list"] = {
+        "status": ro8.status_code,
+        "total": ro8.json().get("data", {}).get("pagination", {}).get("total"),
+    }
+
+    ro9 = httpx.get(base + "/api/v1/admin/audit-events", headers=operator_headers)
+    audit_items = ro9.json().get("data", {}).get("items", [])
+    sig["operator_audit_list"] = {
+        "status": ro9.status_code,
+        "total": ro9.json().get("data", {}).get("pagination", {}).get("total"),
+        "event_types": sorted(i.get("eventType") for i in audit_items),
+        "all_have_reason": all(i.get("metadata", {}).get("reason") for i in audit_items),
+    }
+
+    ro10 = httpx.post(base + "/api/v1/admin/users/some-user/restrict", headers=operator_headers,
+                      json={"reason": ""})
+    sig["operator_empty_reason"] = {
+        "status": ro10.status_code,
+        "error_code": ro10.json().get("error", {}).get("code"),
+    }
+
     return sig
 
 

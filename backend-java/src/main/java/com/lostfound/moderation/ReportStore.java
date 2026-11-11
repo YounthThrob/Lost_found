@@ -25,6 +25,13 @@ public class ReportStore {
             .toList();
     }
 
+    public List<Report> listAll() {
+        return byId.values().stream()
+            .sorted(Comparator.comparing(Report::createdAt, Comparator.reverseOrder())
+                .thenComparing(Report::id))
+            .toList();
+    }
+
     /** 仅供测试重置状态。 */
     public void clear() {
         byId.clear();

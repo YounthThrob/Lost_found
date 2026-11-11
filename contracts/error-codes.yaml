@@ -14,6 +14,9 @@ error-codes:
   ACCOUNT_RESTRICTED:
     http_status: 403
     message: 账户处于限制状态，禁止发布/留言/认领
+  OPERATOR_REQUIRED:
+    http_status: 403
+    message: 无运营管理权限
   VALIDATION_FAILED:
     http_status: 422
     message: 参数校验失败

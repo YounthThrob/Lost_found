@@ -95,6 +95,20 @@ public class ListingService {
         return updated;
     }
 
+    /** 运营下架：仅公开状态（PUBLISHED/VERIFYING/PENDING_HANDOVER）可迁移为 REMOVED。 */
+    public ItemPost remove(String postId) {
+        ItemPost post = store.findById(postId);
+        if (post == null) {
+            throw new BusinessException(ErrorCode.NOT_FOUND);
+        }
+        if (!isRemovable(post.status())) {
+            throw new BusinessException(ErrorCode.INVALID_STATE_TRANSITION);
+        }
+        ItemPost updated = withStatus(post, "REMOVED", Instant.now().toString());
+        store.save(updated);
+        return updated;
+    }
+
     public ItemPost getDetail(String viewerId, String postId) {
         ItemPost post = store.findById(postId);
         if (post == null) {
@@ -175,6 +189,11 @@ public class ListingService {
 
     private boolean isPublic(String status) {
         return "PUBLISHED".equals(status) || "VERIFYING".equals(status);
+    }
+
+    private boolean isRemovable(String status) {
+        return "PUBLISHED".equals(status) || "VERIFYING".equals(status)
+            || "PENDING_HANDOVER".equals(status);
     }
 
     private ItemPost withStatus(ItemPost post, String status, String now) {

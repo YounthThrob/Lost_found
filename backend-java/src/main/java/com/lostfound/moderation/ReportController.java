@@ -24,7 +24,7 @@ public class ReportController {
     public record ReportView(String id, String targetType, String targetId, String reason,
                              String description, String status, String reporterId, String createdAt) {
 
-        static ReportView from(Report r) {
+        public static ReportView from(Report r) {
             return new ReportView(r.id(), r.targetType(), r.targetId(), r.reason(),
                 r.description(), r.status(), r.reporterId(), r.createdAt());
         }

@@ -7,16 +7,27 @@ _store = InMemoryUserStore()
 
 MAX_FIELD_LENGTH = 100
 
+OPERATOR_OPENID = "openid_operator_001"
+
 
 def login(code: str) -> tuple[str, bool]:
     """登录，返回 (token, agreement_accepted)。"""
     openid = code2session_openid(code)
-    user = _store.find_by_openid(openid)
+    role = "OPERATOR" if openid == OPERATOR_OPENID else "USER"
+    user = _store.find_by_openid(openid, role)
     return issue_token(user.id), user.agreement_accepted
 
 
 def current_user(user_id: str) -> UserAccount | None:
     return _store.find_by_id(user_id)
+
+
+def restrict_user(user_id: str) -> UserAccount | None:
+    return _store.restrict(user_id)
+
+
+def unrestrict_user(user_id: str) -> UserAccount | None:
+    return _store.unrestrict(user_id)
 
 
 def confirm_agreement(user_id: str) -> UserAccount | None:

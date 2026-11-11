@@ -47,6 +47,10 @@ def create_report(reporter_id: str, *, target_type: str | None, target_id: str |
     return report
 
 
+def list_all_reports() -> list[Report]:
+    return _store.list_all()
+
+
 def list_reports(reporter_id: str, page: int, page_size: int) -> dict:
     if page < 1 or page_size < 1 or page_size > MAX_PAGE_SIZE:
         raise BusinessError(VALIDATION_FAILED)

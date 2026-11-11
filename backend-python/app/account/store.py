@@ -15,10 +15,15 @@ class UserAccount:
     agreement_accepted_at: str | None = None
     school: str | None = None
     campus: str | None = None
+    role: str = "USER"
 
     @property
     def agreement_accepted(self) -> bool:
         return self.agreement_accepted_at is not None
+
+    @property
+    def is_operator(self) -> bool:
+        return self.role == "OPERATOR"
 
 
 class InMemoryUserStore:
@@ -27,10 +32,10 @@ class InMemoryUserStore:
     def __init__(self):
         self._by_openid: dict[str, UserAccount] = {}
 
-    def find_by_openid(self, openid: str) -> UserAccount:
+    def find_by_openid(self, openid: str, role: str = "USER") -> UserAccount:
         user = self._by_openid.get(openid)
         if user is None:
-            user = UserAccount(id=str(uuid4()), openid=openid, status="ACTIVE")
+            user = UserAccount(id=str(uuid4()), openid=openid, status="ACTIVE", role=role)
             self._by_openid[openid] = user
         return user
 
@@ -53,6 +58,7 @@ class InMemoryUserStore:
             agreement_accepted_at=_now(),
             school=user.school,
             campus=user.campus,
+            role=user.role,
         )
         self._by_openid[user.openid] = updated
         return updated
@@ -68,6 +74,7 @@ class InMemoryUserStore:
             agreement_accepted_at=user.agreement_accepted_at,
             school=school,
             campus=campus,
+            role=user.role,
         )
         self._by_openid[user.openid] = updated
         return updated
@@ -89,6 +96,7 @@ class InMemoryUserStore:
             agreement_accepted_at=user.agreement_accepted_at,
             school=user.school,
             campus=user.campus,
+            role=user.role,
         )
         self._by_openid[user.openid] = updated
         return updated

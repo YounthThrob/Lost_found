@@ -13,6 +13,8 @@ public class AccountService {
 
     private static final int MAX_FIELD_LENGTH = 100;
 
+    private static final String OPERATOR_OPENID = "openid_operator_001";
+
     private final WechatClient wechatClient;
     private final InMemoryUserStore userStore;
     private final JwtService jwtService;
@@ -25,7 +27,8 @@ public class AccountService {
 
     public LoginResult login(String code) {
         String openid = wechatClient.code2sessionOpenid(code);
-        UserAccount user = userStore.findByOpenid(openid);
+        String role = OPERATOR_OPENID.equals(openid) ? "OPERATOR" : "USER";
+        UserAccount user = userStore.findByOpenid(openid, role);
         return new LoginResult(jwtService.issue(user.id()), user.agreementAccepted());
     }
 

@@ -943,6 +943,253 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
+  /admin/posts/{postId}/remove:
+    post:
+      summary: 下架违规信息
+      operationId: removePost
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: postId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AdminActionRequest"
+      responses:
+        "200":
+          description: 下架成功，status 为 REMOVED
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RemovePostResponse"
+        "401":
+          description: 会话无效或已过期
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "403":
+          description: 无运营管理权限（OPERATOR_REQUIRED）
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: 信息不存在
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "409":
+          description: 非法状态迁移（仅公开状态可下架）
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "422":
+          description: 处理原因缺失或超长
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  /admin/users/{userId}/restrict:
+    post:
+      summary: 限制账户
+      operationId: restrictUser
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AdminActionRequest"
+      responses:
+        "200":
+          description: 限制成功，status 为 RESTRICTED
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UserStatusResponse"
+        "401":
+          description: 会话无效或已过期
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "403":
+          description: 无运营管理权限（OPERATOR_REQUIRED）
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: 用户不存在
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "422":
+          description: 处理原因缺失或超长
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  /admin/users/{userId}/unrestrict:
+    post:
+      summary: 解除账户限制
+      operationId: unrestrictUser
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AdminActionRequest"
+      responses:
+        "200":
+          description: 解除限制成功，status 为 ACTIVE
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UserStatusResponse"
+        "401":
+          description: 会话无效或已过期
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "403":
+          description: 无运营管理权限（OPERATOR_REQUIRED）
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: 用户不存在
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "422":
+          description: 处理原因缺失或超长
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  /admin/reports:
+    get:
+      summary: 查看全部举报
+      operationId: listAllReports
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: page
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+        - name: pageSize
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 20
+      responses:
+        "200":
+          description: 全部举报列表（分页）
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ReportListResponse"
+        "401":
+          description: 会话无效或已过期
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "403":
+          description: 无运营管理权限（OPERATOR_REQUIRED）
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "422":
+          description: 分页参数非法
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  /admin/audit-events:
+    get:
+      summary: 查看审计日志
+      operationId: listAuditEvents
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: page
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+        - name: pageSize
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 20
+      responses:
+        "200":
+          description: 审计事件列表（分页）
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuditEventListResponse"
+        "401":
+          description: 会话无效或已过期
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "403":
+          description: 无运营管理权限（OPERATOR_REQUIRED）
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "422":
+          description: 分页参数非法
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
   /blocks:
     post:
       summary: 拉黑用户
@@ -1474,7 +1721,7 @@ components:
           type: ["string", "null"]
         status:
           type: string
-          enum: [DRAFT, PENDING_REVIEW, PUBLISHED, REJECTED, CLOSED, VERIFYING, PENDING_HANDOVER, COMPLETED]
+          enum: [DRAFT, PENDING_REVIEW, PUBLISHED, REJECTED, CLOSED, VERIFYING, PENDING_HANDOVER, COMPLETED, REMOVED]
         authorId:
           type: string
         createdAt:
@@ -1784,6 +2031,112 @@ components:
       properties:
         data:
           $ref: "#/components/schemas/ClueListData"
+        requestId:
+          type: string
+        timestamp:
+          type: string
+          format: date-time
+    AdminActionRequest:
+      type: object
+      required:
+        - reason
+      properties:
+        reason:
+          type: string
+          description: 处理原因（非空，≤200 字符）
+    UserStatusView:
+      type: object
+      required:
+        - id
+        - status
+      properties:
+        id:
+          type: string
+        status:
+          type: string
+          enum: [ACTIVE, RESTRICTED]
+    UserStatusResponse:
+      type: object
+      required:
+        - data
+        - requestId
+        - timestamp
+      properties:
+        data:
+          $ref: "#/components/schemas/UserStatusView"
+        requestId:
+          type: string
+        timestamp:
+          type: string
+          format: date-time
+    RemovePostResponse:
+      type: object
+      required:
+        - data
+        - requestId
+        - timestamp
+      properties:
+        data:
+          $ref: "#/components/schemas/ItemPostView"
+        requestId:
+          type: string
+        timestamp:
+          type: string
+          format: date-time
+    AuditEventView:
+      type: object
+      required:
+        - id
+        - actorId
+        - eventType
+        - targetType
+        - targetId
+        - metadata
+        - createdAt
+      properties:
+        id:
+          type: string
+        actorId:
+          type: string
+          description: 操作者用户标识
+        eventType:
+          type: string
+          enum: [POST_REMOVED, USER_RESTRICTED, USER_UNRESTRICTED]
+        targetType:
+          type: string
+          enum: [POST, USER]
+        targetId:
+          type: string
+        metadata:
+          type: object
+          description: 附加信息（含 reason）
+          properties:
+            reason:
+              type: string
+        createdAt:
+          type: string
+          format: date-time
+    AuditEventListData:
+      type: object
+      required:
+        - items
+        - pagination
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/AuditEventView"
+        pagination:
+          $ref: "#/components/schemas/Pagination"
+    AuditEventListResponse:
+      type: object
+      required:
+        - data
+        - requestId
+        - timestamp
+      properties:
+        data:
+          $ref: "#/components/schemas/AuditEventListData"
         requestId:
           type: string
         timestamp:

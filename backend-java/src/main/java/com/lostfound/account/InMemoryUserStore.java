@@ -17,8 +17,12 @@ public class InMemoryUserStore {
     private final Map<String, UserAccount> byOpenid = new ConcurrentHashMap<>();
 
     public UserAccount findByOpenid(String openid) {
+        return findByOpenid(openid, "USER");
+    }
+
+    public UserAccount findByOpenid(String openid, String role) {
         return byOpenid.computeIfAbsent(openid,
-            o -> new UserAccount(UUID.randomUUID().toString(), o, "ACTIVE", null, null, null));
+            o -> new UserAccount(UUID.randomUUID().toString(), o, "ACTIVE", null, null, null, role));
     }
 
     public UserAccount findById(String id) {
@@ -37,7 +41,7 @@ public class InMemoryUserStore {
             return user;
         }
         UserAccount updated = new UserAccount(user.id(), user.openid(), user.status(),
-            Instant.now().toString(), user.school(), user.campus());
+            Instant.now().toString(), user.school(), user.campus(), user.role());
         byOpenid.put(user.openid(), updated);
         return updated;
     }
@@ -48,7 +52,7 @@ public class InMemoryUserStore {
             return null;
         }
         UserAccount updated = new UserAccount(user.id(), user.openid(), user.status(),
-            user.agreementAcceptedAt(), school, campus);
+            user.agreementAcceptedAt(), school, campus, user.role());
         byOpenid.put(user.openid(), updated);
         return updated;
     }
@@ -67,7 +71,7 @@ public class InMemoryUserStore {
             return null;
         }
         UserAccount updated = new UserAccount(user.id(), user.openid(), status,
-            user.agreementAcceptedAt(), user.school(), user.campus());
+            user.agreementAcceptedAt(), user.school(), user.campus(), user.role());
         byOpenid.put(user.openid(), updated);
         return updated;
     }

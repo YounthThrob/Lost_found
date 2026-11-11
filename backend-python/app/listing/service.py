@@ -85,6 +85,16 @@ def close(author_id: str, post_id: str) -> ItemPost:
     return _with_status(post, "CLOSED")
 
 
+def remove(post_id: str) -> ItemPost:
+    """运营下架：仅公开状态（PUBLISHED/VERIFYING/PENDING_HANDOVER）可迁移为 REMOVED。"""
+    post = _store.find_by_id(post_id)
+    if post is None:
+        raise BusinessError(NOT_FOUND)
+    if post.status not in ("PUBLISHED", "VERIFYING", "PENDING_HANDOVER"):
+        raise BusinessError(INVALID_STATE_TRANSITION)
+    return _with_status(post, "REMOVED")
+
+
 def get_detail(viewer_id: str, post_id: str) -> ItemPost:
     post = _store.find_by_id(post_id)
     if post is None:

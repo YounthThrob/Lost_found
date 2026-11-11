@@ -32,5 +32,11 @@ class InMemoryReportStore:
         reports.sort(key=lambda r: r.created_at, reverse=True)
         return reports
 
+    def list_all(self) -> list[Report]:
+        reports = list(self._by_id.values())
+        reports.sort(key=lambda r: r.id)
+        reports.sort(key=lambda r: r.created_at, reverse=True)
+        return reports
+
     def clear(self) -> None:
         self._by_id.clear()

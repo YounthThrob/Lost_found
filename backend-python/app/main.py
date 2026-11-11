@@ -8,6 +8,7 @@ from app.communication.router import router as communication_router
 from app.handover.router import router as handover_router
 from app.listing.router import router as listing_router
 from app.moderation.router import router as moderation_router
+from app.operations.router import router as operations_router
 from app.shared.errors import register_exception_handlers
 
 app = FastAPI(title="校园失物招领互助平台 Python 后端", version="0.1.0")
@@ -16,6 +17,7 @@ app.include_router(account_router, prefix="/api/v1")
 app.include_router(bookmark_router, prefix="/api/v1")
 app.include_router(listing_router, prefix="/api/v1")
 app.include_router(moderation_router, prefix="/api/v1")
+app.include_router(operations_router, prefix="/api/v1")
 app.include_router(claim_router, prefix="/api/v1")
 app.include_router(clue_router, prefix="/api/v1")
 app.include_router(communication_router, prefix="/api/v1")
