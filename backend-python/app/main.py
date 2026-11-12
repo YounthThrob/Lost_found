@@ -1,4 +1,7 @@
+import os
+
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 
 from app.account.router import router as account_router
 from app.bookmark.router import router as bookmark_router
@@ -11,7 +14,21 @@ from app.moderation.router import router as moderation_router
 from app.operations.router import router as operations_router
 from app.shared.errors import register_exception_handlers
 
+
+def _cors_origins() -> list[str]:
+    # 仅允许配置的运营后台来源，禁止生产环境使用通配来源。
+    raw = os.getenv("CORS_ORIGINS", "http://localhost:5173,http://127.0.0.1:5173")
+    return [o.strip() for o in raw.split(",") if o.strip()]
+
+
 app = FastAPI(title="校园失物招领互助平台 Python 后端", version="0.1.0")
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=_cors_origins(),
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 register_exception_handlers(app)
 app.include_router(account_router, prefix="/api/v1")
 app.include_router(bookmark_router, prefix="/api/v1")
