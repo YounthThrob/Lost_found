@@ -69,3 +69,6 @@ logs/
 
 # ===== OpenSpec local working views (purely local, not shared) =====
 openspec/worksets/
+
+# ===== WeChat DevTools local state =====
+project.private.config.json
