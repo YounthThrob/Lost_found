@@ -12,7 +12,9 @@
 
 ## 运行
 
-1. 用微信开发者工具「导入项目」，选择本 `miniapp/` 目录；AppID 可填测试号（`project.config.json` 已置 `touristappid`）。
+1. 用微信开发者工具「导入项目」，选择本 `miniapp/` 目录；AppID 填自己的小程序 AppID（`project.config.json` 的 `appid` 已置空，导入时会弹框填写）。
+   - 注册小程序（个人主体、免费、无需认证）获取 AppID：<https://mp.weixin.qq.com>
+   - 游客模式（touristappid）不支持 TypeScript 编译插件、npm 构建、真机预览与上传，会报「游客 AppID 无法使用此功能」，故需真实 AppID。
 2. 开发者工具勾选「不校验合法域名」（本地联调时请求 `http://127.0.0.1`）。
 3. 确认 `config.ts` 的 `API_BASE` 指向已启动的后端（Java 默认 8080，Python 默认 8000）。
 4. 开发环境未接微信登录时，`config.ts` 的 `MOCK_CODE` 使用后端 mock code（`valid-code` 等）；上线前置空改走 `wx.login`。
