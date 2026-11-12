@@ -55,6 +55,16 @@ public class ClaimController {
         return Envelope.ok(new ClaimListData(views, result.pagination()));
     }
 
+    @GetMapping("/me/claims")
+    public Envelope.Response<ClaimListData> listMyClaims(Authentication authentication,
+                                                         @RequestParam(defaultValue = "1") int page,
+                                                         @RequestParam(defaultValue = "20") int pageSize) {
+        ClaimService.ClaimListResult result =
+            claimService.listMyClaims(authentication.getName(), page, pageSize);
+        List<ClaimView> views = result.items().stream().map(ClaimView::from).toList();
+        return Envelope.ok(new ClaimListData(views, result.pagination()));
+    }
+
     @PostMapping("/claims/{claimId}/request-info")
     public Envelope.Response<ClaimView> requestInfo(Authentication authentication,
                                                     @PathVariable String claimId) {

@@ -150,6 +150,10 @@ EXPECTED = {
         "all_have_reason": True,
     },
     "operator_empty_reason": {"status": 422, "error_code": "VALIDATION_FAILED"},
+    "my_posts_list": {"status": 200, "total_gte_1": True, "has_draft": True},
+    "my_posts_isolation": {"status": 200, "total": 0},
+    "my_claims_list": {"status": 200, "total_gte_1": True},
+    "my_claims_isolation": {"status": 200, "total": 0},
 }
 
 
@@ -954,6 +958,33 @@ def probe(base: str) -> dict:
     sig["operator_empty_reason"] = {
         "status": ro10.status_code,
         "error_code": ro10.json().get("error", {}).get("code"),
+    }
+
+    # ---- my-items ----
+    rm1 = httpx.get(base + "/api/v1/me/posts", headers=headers, params={"pageSize": 100})
+    my_posts = rm1.json().get("data", {}).get("items", [])
+    sig["my_posts_list"] = {
+        "status": rm1.status_code,
+        "total_gte_1": rm1.json().get("data", {}).get("pagination", {}).get("total", 0) >= 1,
+        "has_draft": any(p.get("status") == "DRAFT" for p in my_posts),
+    }
+
+    rm2 = httpx.get(base + "/api/v1/me/posts", headers=headers2, params={"pageSize": 100})
+    sig["my_posts_isolation"] = {
+        "status": rm2.status_code,
+        "total": rm2.json().get("data", {}).get("pagination", {}).get("total"),
+    }
+
+    rm3 = httpx.get(base + "/api/v1/me/claims", headers=headers2, params={"pageSize": 100})
+    sig["my_claims_list"] = {
+        "status": rm3.status_code,
+        "total_gte_1": rm3.json().get("data", {}).get("pagination", {}).get("total", 0) >= 1,
+    }
+
+    rm4 = httpx.get(base + "/api/v1/me/claims", headers=headers, params={"pageSize": 100})
+    sig["my_claims_isolation"] = {
+        "status": rm4.status_code,
+        "total": rm4.json().get("data", {}).get("pagination", {}).get("total"),
     }
 
     return sig

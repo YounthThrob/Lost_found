@@ -92,6 +92,19 @@ def get_post(post_id: str, user_id: str = Depends(get_current_user)):
     return envelope(_view(service.get_detail(user_id, post_id)))
 
 
+@router.get("/me/posts")
+def list_my_posts(
+    page: int = Query(1, ge=1),
+    page_size: int = Query(20, ge=1, le=100, alias="pageSize"),
+    user_id: str = Depends(get_current_user),
+):
+    result = service.list_my_posts(user_id, page, page_size)
+    return envelope({
+        "items": [_view(p) for p in result["items"]],
+        "pagination": result["pagination"],
+    })
+
+
 @router.get("/posts")
 def search_posts(
     keyword: str | None = Query(None),

@@ -35,6 +35,12 @@ class InMemoryClaimStore:
         claims.sort(key=lambda c: c.created_at, reverse=True)
         return claims
 
+    def list_by_applicant(self, applicant_id: str) -> list[Claim]:
+        claims = [c for c in self._by_id.values() if c.applicant_id == applicant_id]
+        claims.sort(key=lambda c: c.id)
+        claims.sort(key=lambda c: c.created_at, reverse=True)
+        return claims
+
     def find_active(self, applicant_id: str, post_id: str) -> Claim | None:
         for c in self._by_id.values():
             if c.applicant_id == applicant_id and c.post_id == post_id and _is_active(c.status):

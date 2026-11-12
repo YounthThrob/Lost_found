@@ -72,6 +72,18 @@ public class ClaimService {
         return new ClaimListResult(items, new Pagination(page, pageSize, total, hasMore));
     }
 
+    public ClaimListResult listMyClaims(String applicantId, int page, int pageSize) {
+        if (page < 1 || pageSize < 1 || pageSize > MAX_PAGE_SIZE) {
+            throw new BusinessException(ErrorCode.VALIDATION_FAILED);
+        }
+        List<Claim> all = store.listByApplicant(applicantId);
+        int total = all.size();
+        int from = (page - 1) * pageSize;
+        List<Claim> items = from >= total ? List.of() : all.subList(from, Math.min(from + pageSize, total));
+        boolean hasMore = from + pageSize < total;
+        return new ClaimListResult(items, new Pagination(page, pageSize, total, hasMore));
+    }
+
     public Claim requestInfo(String ownerId, String claimId) {
         Claim claim = requireOwnedClaim(ownerId, claimId);
         if (!"SUBMITTED".equals(claim.status())) {

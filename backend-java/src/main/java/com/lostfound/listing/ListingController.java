@@ -92,4 +92,14 @@ public class ListingController {
         ListingService.Pagination p = result.pagination();
         return Envelope.ok(new ItemPostListData(views, p));
     }
+
+    @GetMapping("/me/posts")
+    public Envelope.Response<ItemPostListData> listMyPosts(Authentication authentication,
+                                                           @RequestParam(defaultValue = "1") int page,
+                                                           @RequestParam(defaultValue = "20") int pageSize) {
+        ListingService.SearchResult result =
+            listingService.listMyPosts(authentication.getName(), page, pageSize);
+        List<ItemPostView> views = result.items().stream().map(ItemPostView::from).toList();
+        return Envelope.ok(new ItemPostListData(views, result.pagination()));
+    }
 }

@@ -95,6 +95,20 @@ def remove(post_id: str) -> ItemPost:
     return _with_status(post, "REMOVED")
 
 
+def list_my_posts(author_id: str, page: int, page_size: int) -> dict:
+    if page < 1 or page_size < 1 or page_size > MAX_PAGE_SIZE:
+        raise BusinessError(VALIDATION_FAILED)
+    posts = _store.list_by_author(author_id)
+    total = len(posts)
+    start = (page - 1) * page_size
+    items = posts[start:start + page_size]
+    has_more = start + page_size < total
+    return {
+        "items": items,
+        "pagination": {"page": page, "pageSize": page_size, "total": total, "hasMore": has_more},
+    }
+
+
 def get_detail(viewer_id: str, post_id: str) -> ItemPost:
     post = _store.find_by_id(post_id)
     if post is None:

@@ -46,6 +46,19 @@ def list_post_claims(
     })
 
 
+@router.get("/me/claims")
+def list_my_claims(
+    page: int = Query(1, ge=1),
+    page_size: int = Query(20, ge=1, le=100, alias="pageSize"),
+    user_id: str = Depends(get_current_user),
+):
+    result = service.list_my_claims(user_id, page, page_size)
+    return envelope({
+        "items": [_view(c) for c in result["items"]],
+        "pagination": result["pagination"],
+    })
+
+
 @router.post("/claims/{claim_id}/request-info")
 def request_info(claim_id: str, user_id: str = Depends(get_current_user)):
     return envelope(_view(service.request_info(user_id, claim_id)))

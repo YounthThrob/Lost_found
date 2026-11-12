@@ -30,6 +30,15 @@ public class ItemPostStore {
             .toList();
     }
 
+    /** 返回某作者的全部信息（不分状态），按创建时间倒序。 */
+    public List<ItemPost> listByAuthor(String authorId) {
+        return byId.values().stream()
+            .filter(p -> p.authorId().equals(authorId))
+            .sorted(Comparator.comparing(ItemPost::createdAt, Comparator.reverseOrder())
+                .thenComparing(ItemPost::id))
+            .toList();
+    }
+
     /** 仅供测试重置状态。 */
     public void clear() {
         byId.clear();

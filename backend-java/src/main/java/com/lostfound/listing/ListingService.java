@@ -141,6 +141,18 @@ public class ListingService {
         return new SearchResult(items, new Pagination(page, pageSize, total, hasMore));
     }
 
+    public SearchResult listMyPosts(String authorId, int page, int pageSize) {
+        if (page < 1 || pageSize < 1 || pageSize > MAX_PAGE_SIZE) {
+            throw new BusinessException(ErrorCode.VALIDATION_FAILED);
+        }
+        List<ItemPost> all = store.listByAuthor(authorId);
+        int total = all.size();
+        int from = (page - 1) * pageSize;
+        List<ItemPost> items = from >= total ? List.of() : all.subList(from, Math.min(from + pageSize, total));
+        boolean hasMore = from + pageSize < total;
+        return new SearchResult(items, new Pagination(page, pageSize, total, hasMore));
+    }
+
     private ItemPost requireOwned(String authorId, String postId) {
         ItemPost post = store.findById(postId);
         if (post == null || !post.authorId().equals(authorId)) {

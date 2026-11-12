@@ -67,6 +67,20 @@ def list_by_post(owner_id: str, post_id: str, page: int, page_size: int) -> dict
     }
 
 
+def list_my_claims(applicant_id: str, page: int, page_size: int) -> dict:
+    if page < 1 or page_size < 1 or page_size > MAX_PAGE_SIZE:
+        raise BusinessError(VALIDATION_FAILED)
+    claims = _store.list_by_applicant(applicant_id)
+    total = len(claims)
+    start = (page - 1) * page_size
+    items = claims[start:start + page_size]
+    has_more = start + page_size < total
+    return {
+        "items": items,
+        "pagination": {"page": page, "pageSize": page_size, "total": total, "hasMore": has_more},
+    }
+
+
 def request_info(owner_id: str, claim_id: str) -> Claim:
     claim = _require_owned_claim(owner_id, claim_id)
     if claim.status != "SUBMITTED":

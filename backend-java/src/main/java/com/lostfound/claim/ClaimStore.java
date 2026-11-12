@@ -29,6 +29,14 @@ public class ClaimStore {
             .toList();
     }
 
+    public List<Claim> listByApplicant(String applicantId) {
+        return byId.values().stream()
+            .filter(c -> c.applicantId().equals(applicantId))
+            .sorted(Comparator.comparing(Claim::createdAt, Comparator.reverseOrder())
+                .thenComparing(Claim::id))
+            .toList();
+    }
+
     /** 同一申请人对同一信息进行中的申请。 */
     public Claim findActive(String applicantId, String postId) {
         return byId.values().stream()
