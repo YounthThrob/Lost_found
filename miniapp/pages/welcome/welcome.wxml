@@ -1,0 +1,31 @@
+<view class="container">
+  <view class="hero">
+    <view class="hero-title">校园失物招领</view>
+    <view class="hero-sub">互助信息平台（非官方）</view>
+  </view>
+
+  <view class="card">
+    <view class="card-title">平台声明</view>
+    <view class="muted">
+      本平台是学生自主发起的互助工具，<text class="strong">并非校方官方平台</text>，也不代表任何学校认证。
+    </view>
+    <view class="muted" style="margin-top: 12rpx;">
+      平台上的学校、校区等信息均由用户<text class="strong">自行填写，未经校方认证</text>，请勿据此判断对方身份。
+    </view>
+    <view class="muted" style="margin-top: 12rpx;">
+      请勿在公开内容中暴露证件号、人像、二维码、银行卡号等敏感信息；涉及线下交接请选择人员较多的公共区域，谨防转账诈骗。
+    </view>
+  </view>
+
+  <view class="card">
+    <view class="card-title">风险提示</view>
+    <view class="muted">
+      本平台不核验用户真实身份，不保证信息真实性。请谨慎对待任何涉及财物、隐私与线下见面的请求。
+    </view>
+  </view>
+
+  <button class="btn btn-block" bindtap="onAgree" loading="{{loading}}" disabled="{{loading}}">
+    已阅读并同意，进入平台
+  </button>
+  <view class="disclaimer">点击即表示同意《用户协议》与《隐私说明》</view>
+</view>

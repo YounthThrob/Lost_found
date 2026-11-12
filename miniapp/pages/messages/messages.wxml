@@ -1,0 +1,22 @@
+<view class="chat-wrap">
+  <scroll-view scroll-y class="chat-list" scroll-into-view="{{scrollTo}}">
+    <view wx:for="{{items}}" wx:key="id" class="msg-row {{item.mine ? 'mine' : ''}}">
+      <view class="bubble {{item.mine ? 'bubble-mine' : 'bubble-other'}}">
+        <view wx:if="{{item.typeLabel}}" class="bubble-type">{{item.typeLabel}}</view>
+        <view>{{item.content}}</view>
+        <view class="bubble-time">{{item.timeLabel}}</view>
+      </view>
+    </view>
+    <view wx:if="{{items.length === 0}}" class="empty">还没有消息，开始沟通吧</view>
+  </scroll-view>
+
+  <view class="quick-bar">
+    <view wx:for="{{quicks}}" wx:key="type" class="chip" data-idx="{{index}}" bindtap="onQuick">{{item.label}}</view>
+    <view wx:if="{{peerId}}" class="chip chip-danger" bindtap="onBlock">拉黑</view>
+  </view>
+
+  <view class="input-bar">
+    <input class="chat-input" placeholder="输入消息…" value="{{content}}" bindinput="onInput" confirm-type="send" bindconfirm="send" />
+    <button class="send-btn" bindtap="send" loading="{{sending}}">发送</button>
+  </view>
+</view>

@@ -1,0 +1,20 @@
+{
+  "description": "校园失物招领互助小程序（非官方）",
+  "packOptions": {
+    "ignore": []
+  },
+  "setting": {
+    "urlCheck": false,
+    "es6": true,
+    "enhance": true,
+    "postcss": true,
+    "minified": true,
+    "newFeature": true,
+    "useCompilerPlugins": ["typescript"]
+  },
+  "compileType": "miniprogram",
+  "libVersion": "3.0.0",
+  "appid": "touristappid",
+  "projectname": "lost-found-miniapp",
+  "condition": {}
+}

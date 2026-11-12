@@ -1,0 +1,10 @@
+<view class="container">
+  <view class="card">
+    <view class="form-label">学校</view>
+    <input class="input" placeholder="请输入学校名称" value="{{school}}" data-field="school" bindinput="onInput" />
+    <view class="form-label">校区（可选）</view>
+    <input class="input" placeholder="如：东校区" value="{{campus}}" data-field="campus" bindinput="onInput" />
+    <button class="btn btn-block" bindtap="onSave" loading="{{saving}}" disabled="{{saving}}">保存</button>
+    <view class="disclaimer">学校与校区为用户自报，未经校方认证，仅用于信息筛选与展示。</view>
+  </view>
+</view>

@@ -1,0 +1,11 @@
+<view class="container">
+  <view wx:for="{{items}}" wx:key="id" class="card">
+    <view class="row-between">
+      <view class="tag tag-orange">{{item.targetLabel}} · {{item.reason}}</view>
+      <view class="muted">{{item.timeLabel}}</view>
+    </view>
+    <view class="muted" style="margin-top: 12rpx;">对象：{{item.targetId}}</view>
+    <view wx:if="{{item.description}}" class="muted" style="margin-top: 8rpx;">说明：{{item.description}}</view>
+  </view>
+  <view wx:if="{{items.length === 0}}" class="empty">暂无举报记录</view>
+</view>

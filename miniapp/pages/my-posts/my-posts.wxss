@@ -1,0 +1,38 @@
+.item-title {
+  font-size: 32rpx;
+  font-weight: 600;
+  margin: 12rpx 0 8rpx;
+}
+
+.mini-btn {
+  font-size: 24rpx;
+  padding: 0 20rpx;
+  height: 56rpx;
+  line-height: 56rpx;
+  border-radius: 8rpx;
+  margin: 0;
+}
+
+.mini-btn::after {
+  border: none;
+}
+
+.mini-info {
+  background: #eef3fb;
+  color: #3a66b8;
+}
+
+.mini-ok {
+  background: #e8f7ea;
+  color: #1aad19;
+}
+
+.mini-no {
+  background: #fdecec;
+  color: #fa5151;
+}
+
+.mini-msg {
+  background: #fff3e0;
+  color: #e6830c;
+}

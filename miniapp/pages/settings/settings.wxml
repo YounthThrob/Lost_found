@@ -1,0 +1,16 @@
+<view class="container">
+  <view class="card">
+    <view class="card-title">关于平台</view>
+    <view class="muted">校园失物招领互助小程序（非官方）。本平台由学生自主维护，不代表任何学校，也不核验用户身份。</view>
+    <view class="muted" style="margin-top: 12rpx;">学校、校区等信息均为用户自报，未经校方认证。</view>
+  </view>
+
+  <view class="card">
+    <view class="card-title">协议</view>
+    <view class="menu-item">用户协议</view>
+    <view class="menu-item">隐私说明</view>
+    <view class="menu-item">注销申请（建设中）</view>
+  </view>
+
+  <button class="btn btn-danger btn-block" bindtap="onLogout">退出登录</button>
+</view>

@@ -1,0 +1,12 @@
+{
+  "name": "lost-found-miniapp",
+  "version": "0.1.0",
+  "private": true,
+  "description": "校园失物招领互助小程序（非官方）原生 TypeScript 客户端",
+  "scripts": {
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "typescript": "^5.5.0"
+  }
+}

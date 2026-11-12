@@ -1,0 +1,18 @@
+<view class="container">
+  <view wx:for="{{items}}" wx:key="id" class="card">
+    <view class="row-between">
+      <view class="tag {{item.type === 'FOUND' ? 'tag-green' : 'tag-orange'}}">{{item.type === 'FOUND' ? '招领' : '寻物'}}</view>
+      <view class="muted">{{item.statusLabel}}</view>
+    </view>
+    <view class="item-title">{{item.title}}</view>
+    <view class="muted">{{item.timeLabel}}</view>
+    <view class="divider"></view>
+    <view class="row" style="flex-wrap: wrap; gap: 16rpx;">
+      <button class="mini-btn mini-info" data-id="{{item.id}}" bindtap="goDetail">查看</button>
+      <button wx:if="{{item.status === 'DRAFT'}}" class="mini-btn mini-ok" data-id="{{item.id}}" bindtap="goEdit">编辑</button>
+      <button wx:if="{{item.status === 'PUBLISHED'}}" class="mini-btn mini-no" data-id="{{item.id}}" bindtap="onClose">关闭</button>
+      <button wx:if="{{item.status === 'PUBLISHED' || item.status === 'VERIFYING' || item.status === 'PENDING_HANDOVER'}}" class="mini-btn mini-msg" data-id="{{item.id}}" bindtap="goClaims">申请管理</button>
+    </view>
+  </view>
+  <view wx:if="{{items.length === 0}}" class="empty">暂无发布</view>
+</view>

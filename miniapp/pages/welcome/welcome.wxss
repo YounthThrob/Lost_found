@@ -1,0 +1,20 @@
+.hero {
+  padding: 60rpx 0 40rpx;
+  text-align: center;
+}
+
+.hero-title {
+  font-size: 44rpx;
+  font-weight: 700;
+}
+
+.hero-sub {
+  color: #8a919f;
+  font-size: 26rpx;
+  margin-top: 8rpx;
+}
+
+.strong {
+  color: #e6830c;
+  font-weight: 600;
+}

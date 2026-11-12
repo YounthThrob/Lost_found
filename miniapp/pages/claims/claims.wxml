@@ -1,0 +1,37 @@
+<view class="container">
+  <view wx:for="{{items}}" wx:key="id" class="card">
+    <view class="row-between">
+      <view class="tag tag-gray">{{item.statusLabel}}</view>
+      <view class="muted">{{item.timeLabel}}</view>
+    </view>
+    <view class="stmt">{{item.statement}}</view>
+    <view class="muted">申请人：{{item.applicantId}}</view>
+
+    <view class="divider"></view>
+    <view class="row" style="flex-wrap: wrap; gap: 16rpx;">
+      <block wx:if="{{item.status === 'SUBMITTED' || item.status === 'NEEDS_MORE_INFO'}}">
+        <button class="mini-btn mini-info" data-id="{{item.id}}" data-action="request-info" bindtap="act">请求补充</button>
+        <button class="mini-btn mini-ok" data-id="{{item.id}}" data-action="accept" bindtap="act">通过</button>
+        <button class="mini-btn mini-no" data-id="{{item.id}}" data-action="reject" bindtap="act">拒绝</button>
+      </block>
+      <button wx:if="{{item.status === 'ACCEPTED'}}" class="mini-btn mini-ok" data-id="{{item.id}}" bindtap="goHandover">发起交接</button>
+      <button class="mini-btn mini-msg" data-id="{{item.id}}" data-peer="{{item.applicantId}}" bindtap="goMessages">沟通</button>
+      <button class="mini-btn mini-no" data-applicant="{{item.applicantId}}" bindtap="openReport">举报</button>
+    </view>
+  </view>
+
+  <view wx:if="{{items.length === 0}}" class="empty">暂无申请</view>
+</view>
+
+<view class="mask" wx:if="{{showReport}}">
+  <view class="sheet">
+    <view class="sheet-title">举报申请人</view>
+    <picker mode="selector" range="{{reportReasons}}" bindchange="onReportReason">
+      <view class="picker">{{reportReason}}</view>
+    </picker>
+    <view class="row" style="gap: 16rpx;">
+      <button class="btn btn-ghost" style="flex: 1;" bindtap="closeReport">取消</button>
+      <button class="btn" style="flex: 1;" bindtap="submitReport" loading="{{submitting}}">提交</button>
+    </view>
+  </view>
+</view>

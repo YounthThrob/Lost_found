@@ -1,0 +1,44 @@
+{
+  "pages": [
+    "pages/welcome/welcome",
+    "pages/index/index",
+    "pages/publish/publish",
+    "pages/detail/detail",
+    "pages/claim-form/claim-form",
+    "pages/claims/claims",
+    "pages/my-claims/my-claims",
+    "pages/messages/messages",
+    "pages/handover/handover",
+    "pages/my/my",
+    "pages/my-posts/my-posts",
+    "pages/bookmarks/bookmarks",
+    "pages/campus/campus",
+    "pages/blocks/blocks",
+    "pages/reports/reports",
+    "pages/settings/settings"
+  ],
+  "window": {
+    "backgroundTextStyle": "light",
+    "navigationBarBackgroundColor": "#ffffff",
+    "navigationBarTitleText": "失物招领（非官方）",
+    "navigationBarTextStyle": "black"
+  },
+  "tabBar": {
+    "color": "#999999",
+    "selectedColor": "#1aad19",
+    "backgroundColor": "#ffffff",
+    "borderStyle": "black",
+    "list": [
+      {
+        "pagePath": "pages/index/index",
+        "text": "首页"
+      },
+      {
+        "pagePath": "pages/my/my",
+        "text": "我的"
+      }
+    ]
+  },
+  "style": "v2",
+  "sitemapLocation": "sitemap.json"
+}

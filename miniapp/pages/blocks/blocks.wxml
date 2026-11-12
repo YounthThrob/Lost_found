@@ -1,0 +1,12 @@
+<view class="container">
+  <view wx:for="{{items}}" wx:key="blockedUserId" class="card">
+    <view class="row-between">
+      <view>
+        <view>用户：{{item.blockedUserId}}</view>
+        <view class="muted">拉黑于 {{item.timeLabel}}</view>
+      </view>
+      <button class="mini-btn mini-no" data-id="{{item.blockedUserId}}" bindtap="onUnblock">解除</button>
+    </view>
+  </view>
+  <view wx:if="{{items.length === 0}}" class="empty">黑名单为空</view>
+</view>

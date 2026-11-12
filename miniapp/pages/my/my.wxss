@@ -1,0 +1,17 @@
+.menu-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 28rpx 8rpx;
+  border-bottom: 1rpx solid #f0f1f3;
+  font-size: 30rpx;
+}
+
+.menu-item:last-child {
+  border-bottom: none;
+}
+
+.arrow {
+  color: #c4c9d1;
+  font-size: 36rpx;
+}

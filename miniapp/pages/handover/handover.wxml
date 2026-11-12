@@ -1,0 +1,32 @@
+<view class="container">
+  <view class="card">
+    <view class="card-title">安全提示</view>
+    <view class="muted">请选择人员较多的公共区域交接，拒绝任何形式的转账、押金与代付款，保护个人隐私。</view>
+  </view>
+
+  <view wx:if="{{!handover}}" class="card">
+    <view class="card-title">创建交接安排</view>
+    <view class="form-label">时间窗口</view>
+    <input class="input" placeholder="如：11月13日 12:00-13:00" value="{{timeWindow}}" data-field="timeWindow" bindinput="onInput" />
+    <view class="form-label">公共区域</view>
+    <input class="input" placeholder="如：图书馆正门大厅（请勿填写宿舍房间）" value="{{publicPlace}}" data-field="publicPlace" bindinput="onInput" />
+    <button class="btn btn-block" bindtap="create" loading="{{submitting}}" disabled="{{submitting}}">创建交接安排</button>
+  </view>
+
+  <view wx:else class="card">
+    <view class="card-title">交接详情</view>
+    <view class="row-between"><text class="muted">状态</text><text class="tag tag-green">{{handover.statusLabel}}</text></view>
+    <view class="divider"></view>
+    <view class="meta-row"><text class="meta-label">时间窗口</text>{{handover.timeWindow}}</view>
+    <view class="meta-row"><text class="meta-label">公共区域</text>{{handover.publicPlace}}</view>
+    <view class="meta-row"><text class="meta-label">发起时间</text>{{handover.timeLabel}}</view>
+    <view class="meta-row" wx:if="{{handover.ownerConfirmedAt}}"><text class="meta-label">发布者确认</text>{{handover.ownerConfirmedAt}}</view>
+    <view class="meta-row" wx:if="{{handover.claimantConfirmedAt}}"><text class="meta-label">申请人确认</text>{{handover.claimantConfirmedAt}}</view>
+
+    <view class="divider"></view>
+    <block wx:if="{{handover.status === 'PENDING'}}">
+      <button class="btn btn-block" style="margin-bottom: 16rpx;" data-action="confirm" bindtap="act">确认完成</button>
+      <button class="btn btn-danger btn-block" data-action="cancel" bindtap="act">终止交接</button>
+    </block>
+  </view>
+</view>

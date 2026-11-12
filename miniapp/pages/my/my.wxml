@@ -1,0 +1,15 @@
+<view class="container">
+  <view wx:if="{{restricted}}" class="card" style="background: #fdecec;">
+    <view class="card-title" style="color: #fa5151;">账户已受限</view>
+    <view class="muted">部分操作已被限制，如有疑问可通过反馈渠道申诉。</view>
+  </view>
+
+  <view class="card">
+    <view wx:for="{{menu}}" wx:key="url" class="menu-item" data-url="{{item.url}}" bindtap="nav">
+      <text>{{item.label}}</text>
+      <text class="arrow">›</text>
+    </view>
+  </view>
+
+  <view class="disclaimer" style="text-align: center;">本平台为互助工具，非校方官方平台，不核验用户身份。</view>
+</view>

@@ -1,0 +1,13 @@
+<view class="container">
+  <view class="card">
+    <view class="card-title">归属证明</view>
+    <view class="muted">
+      请描述只有物主才知道的信息，例如物品的独特特征、大致遗失时间与地点。内容仅对发布者可见。
+    </view>
+    <view class="divider"></view>
+    <textarea class="textarea" placeholder="请勿填写密码、验证码、支付凭证等高风险信息" value="{{statement}}" bindinput="onInput" />
+  </view>
+
+  <view class="disclaimer">申请内容仅对申请人与发布者可见，不对外公开。</view>
+  <button class="btn btn-block" bindtap="onSubmit" loading="{{submitting}}" disabled="{{submitting}}">提交申请</button>
+</view>
