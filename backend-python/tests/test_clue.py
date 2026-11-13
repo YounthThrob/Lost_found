@@ -17,7 +17,7 @@ LOST_BODY = {
     "category": "校园卡",
     "title": "遗失校园卡",
     "publicDescription": "在图书馆附近遗失校园卡",
-    "school": "南方大学",
+    "schoolId": "018c0000-0000-7000-8000-000000000001",
 }
 
 FOUND_BODY = {
@@ -25,7 +25,7 @@ FOUND_BODY = {
     "category": "校园卡",
     "title": "拾到校园卡",
     "publicDescription": "在食堂拾到一张校园卡",
-    "school": "南方大学",
+    "schoolId": "018c0000-0000-7000-8000-000000000001",
 }
 
 

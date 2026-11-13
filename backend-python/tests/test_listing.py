@@ -15,8 +15,7 @@ CREATE_BODY = {
     "category": "校园卡",
     "title": "遗失校园卡",
     "publicDescription": "在图书馆附近遗失一张校园卡",
-    "school": "南方大学",
-    "campus": "东校区",
+    "schoolId": "018c0000-0000-7000-8000-000000000001",
     "area": "图书馆",
 }
 
@@ -87,7 +86,7 @@ def test_edit_draft_success():
 
     resp = client.patch(f"/api/v1/posts/{post_id}", headers=_headers(token), json={
         "type": "FOUND", "category": "雨伞", "title": "拾到雨伞",
-        "publicDescription": "在食堂拾到一把雨伞", "school": "南方大学", "campus": "西校区",
+        "publicDescription": "在食堂拾到一把雨伞", "schoolId": "018c0000-0000-7000-8000-000000000001",
     })
     assert resp.status_code == 200
     data = resp.json()["data"]

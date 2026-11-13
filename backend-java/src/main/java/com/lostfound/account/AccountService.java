@@ -1,5 +1,8 @@
 package com.lostfound.account;
 
+import com.lostfound.directory.Campus;
+import com.lostfound.directory.DirectoryService;
+import com.lostfound.directory.School;
 import com.lostfound.security.JwtService;
 import com.lostfound.shared.BusinessException;
 import com.lostfound.shared.ErrorCode;
@@ -30,14 +33,17 @@ public class AccountService {
     private final JwtService jwtService;
     private final VerificationProvider verificationProvider;
     private final Storage storage;
+    private final DirectoryService directoryService;
 
     public AccountService(WechatClient wechatClient, InMemoryUserStore userStore, JwtService jwtService,
-                          VerificationProvider verificationProvider, Storage storage) {
+                          VerificationProvider verificationProvider, Storage storage,
+                          DirectoryService directoryService) {
         this.wechatClient = wechatClient;
         this.userStore = userStore;
         this.jwtService = jwtService;
         this.verificationProvider = verificationProvider;
         this.storage = storage;
+        this.directoryService = directoryService;
     }
 
     public LoginResult login(String code) {
@@ -55,17 +61,20 @@ public class AccountService {
         return userStore.confirmAgreement(userId);
     }
 
-    public UserAccount updateCampusProfile(String userId, String school, String campus) {
-        String normalizedSchool = school == null ? "" : school.trim();
-        String normalizedCampus = campus == null || campus.trim().isEmpty() ? null : campus.trim();
-        if (normalizedSchool.isEmpty()) {
+    public UserAccount updateCampusProfile(String userId, String schoolId, String campusId) {
+        School school = directoryService.findSchool(schoolId);
+        if (school == null) {
             throw new BusinessException(ErrorCode.VALIDATION_FAILED);
         }
-        if (normalizedSchool.length() > MAX_FIELD_LENGTH
-                || (normalizedCampus != null && normalizedCampus.length() > MAX_FIELD_LENGTH)) {
-            throw new BusinessException(ErrorCode.VALIDATION_FAILED);
+        String resolvedCampusId = null;
+        if (campusId != null) {
+            Campus campus = directoryService.findActiveCampus(school.id(), campusId);
+            if (campus == null) {
+                throw new BusinessException(ErrorCode.VALIDATION_FAILED);
+            }
+            resolvedCampusId = campus.id();
         }
-        return userStore.updateCampus(userId, normalizedSchool, normalizedCampus);
+        return userStore.updateCampus(userId, school.id(), resolvedCampusId);
     }
 
     public int sendCampusEmailVerification(String userId, String email) {

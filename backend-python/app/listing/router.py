@@ -14,8 +14,8 @@ class ItemPostCreate(BaseModel):
     category: str
     title: str
     publicDescription: str
-    school: str
-    campus: str | None = None
+    schoolId: str | None = None
+    campusId: str | None = None
     area: str | None = None
 
 
@@ -24,8 +24,8 @@ class ItemPostUpdate(BaseModel):
     category: str
     title: str
     publicDescription: str
-    school: str
-    campus: str | None = None
+    schoolId: str | None = None
+    campusId: str | None = None
     area: str | None = None
 
 
@@ -40,8 +40,10 @@ def _view(post) -> dict:
         "category": post.category,
         "title": post.title,
         "publicDescription": post.public_description,
-        "school": post.school,
-        "campus": post.campus,
+        "schoolId": post.school_id,
+        "schoolName": post.school_name,
+        "campusId": post.campus_id,
+        "campusName": post.campus_name,
         "area": post.area,
         "status": post.status,
         "authorId": post.author_id,
@@ -59,8 +61,8 @@ def create_post(request: ItemPostCreate, user_id: str = Depends(require_agreemen
         category=request.category,
         title=request.title,
         public_description=request.publicDescription,
-        school=request.school,
-        campus=request.campus,
+        school_id=request.schoolId,
+        campus_id=request.campusId,
         area=request.area,
     )
     return envelope(_view(post))
@@ -75,8 +77,8 @@ def update_post(post_id: str, request: ItemPostUpdate, user_id: str = Depends(re
         category=request.category,
         title=request.title,
         public_description=request.publicDescription,
-        school=request.school,
-        campus=request.campus,
+        school_id=request.schoolId,
+        campus_id=request.campusId,
         area=request.area,
     )
     return envelope(_view(post))
@@ -127,12 +129,12 @@ def search_posts(
     keyword: str | None = Query(None),
     post_type: str | None = Query(None, alias="type"),
     category: str | None = Query(None),
-    school: str | None = Query(None),
-    campus: str | None = Query(None),
+    school_id: str | None = Query(None, alias="schoolId"),
+    campus_id: str | None = Query(None, alias="campusId"),
     page: int = Query(1, ge=1),
     page_size: int = Query(20, ge=1, le=100, alias="pageSize"),
 ):
-    result = service.search(keyword, post_type, category, school, campus, page, page_size)
+    result = service.search(keyword, post_type, category, school_id, campus_id, page, page_size)
     return envelope({
         "items": [_view(p) for p in result["items"]],
         "pagination": result["pagination"],

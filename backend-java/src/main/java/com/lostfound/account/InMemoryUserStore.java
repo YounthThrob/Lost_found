@@ -42,20 +42,20 @@ public class InMemoryUserStore {
             return user;
         }
         UserAccount updated = new UserAccount(user.id(), user.openid(), user.status(),
-            Instant.now().toString(), user.school(), user.campus(), user.role(),
+            Instant.now().toString(), user.schoolId(), user.campusId(), user.role(),
             user.verificationStatus(), user.verifiedEmail(), user.emailVerifiedAt(),
             user.nickname(), user.avatarKey());
         byOpenid.put(user.openid(), updated);
         return updated;
     }
 
-    public UserAccount updateCampus(String userId, String school, String campus) {
+    public UserAccount updateCampus(String userId, String schoolId, String campusId) {
         UserAccount user = findById(userId);
         if (user == null) {
             return null;
         }
         UserAccount updated = new UserAccount(user.id(), user.openid(), user.status(),
-            user.agreementAcceptedAt(), school, campus, user.role(),
+            user.agreementAcceptedAt(), schoolId, campusId, user.role(),
             user.verificationStatus(), user.verifiedEmail(), user.emailVerifiedAt(),
             user.nickname(), user.avatarKey());
         byOpenid.put(user.openid(), updated);
@@ -68,7 +68,7 @@ public class InMemoryUserStore {
             return null;
         }
         UserAccount updated = new UserAccount(user.id(), user.openid(), user.status(),
-            user.agreementAcceptedAt(), user.school(), user.campus(), user.role(),
+            user.agreementAcceptedAt(), user.schoolId(), user.campusId(), user.role(),
             "EMAIL_VERIFIED", email, Instant.now().toString(),
             user.nickname(), user.avatarKey());
         byOpenid.put(user.openid(), updated);
@@ -81,7 +81,7 @@ public class InMemoryUserStore {
             return null;
         }
         UserAccount updated = new UserAccount(user.id(), user.openid(), user.status(),
-            user.agreementAcceptedAt(), user.school(), user.campus(), user.role(),
+            user.agreementAcceptedAt(), user.schoolId(), user.campusId(), user.role(),
             user.verificationStatus(), user.verifiedEmail(), user.emailVerifiedAt(),
             nickname, avatarKey);
         byOpenid.put(user.openid(), updated);
@@ -102,7 +102,7 @@ public class InMemoryUserStore {
             return null;
         }
         UserAccount updated = new UserAccount(user.id(), user.openid(), status,
-            user.agreementAcceptedAt(), user.school(), user.campus(), user.role(),
+            user.agreementAcceptedAt(), user.schoolId(), user.campusId(), user.role(),
             user.verificationStatus(), user.verifiedEmail(), user.emailVerifiedAt(),
             user.nickname(), user.avatarKey());
         byOpenid.put(user.openid(), updated);

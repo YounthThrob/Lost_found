@@ -5,6 +5,7 @@ from app.account.store import InMemoryUserStore, UserAccount
 from app.account.verification import EmailProvider
 from app.account.wechat_client import code2session_openid
 from app.config import CAMPUS_EMAIL_DOMAINS
+from app.directory import service as directory_service
 from app.security.jwt import issue_token
 from app.storage import LocalFileStorage
 from app.shared.errors import (
@@ -63,16 +64,29 @@ def require_agreement(user_id: str) -> UserAccount:
     return user
 
 
-def update_campus_profile(user_id: str, school: str | None, campus: str | None) -> UserAccount:
-    normalized_school = (school or "").strip()
-    normalized_campus = campus.strip() if campus and campus.strip() else None
-    if not normalized_school:
+def update_campus_profile(user_id: str, school_id: str | None, campus_id: str | None) -> UserAccount:
+    school = directory_service.find_school(school_id)
+    if school is None:
         raise BusinessError(VALIDATION_FAILED)
-    if len(normalized_school) > MAX_FIELD_LENGTH or (
-        normalized_campus and len(normalized_campus) > MAX_FIELD_LENGTH
-    ):
-        raise BusinessError(VALIDATION_FAILED)
-    return _store.update_campus(user_id, normalized_school, normalized_campus)
+    resolved_campus_id = None
+    if campus_id:
+        campus = directory_service.find_active_campus(school.id, campus_id)
+        if campus is None:
+            raise BusinessError(VALIDATION_FAILED)
+        resolved_campus_id = campus.id
+    return _store.update_campus(user_id, school.id, resolved_campus_id)
+
+
+def campus_profile_view(user: UserAccount) -> dict:
+    return {
+        "schoolId": user.school_id,
+        "schoolName": directory_service.find_school_name(user.school_id),
+        "campusId": user.campus_id,
+        "campusName": directory_service.find_campus_name(user.campus_id),
+        "verificationStatus": user.verification_status,
+        "verifiedEmail": user.verified_email,
+        "emailVerifiedAt": user.email_verified_at,
+    }
 
 
 def send_campus_email_verification(user_id: str, email: str | None) -> int:

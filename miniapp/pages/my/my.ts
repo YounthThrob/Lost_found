@@ -4,7 +4,7 @@ import { isLoggedIn } from "../../utils/auth";
 import type { BookmarkListData, CampusProfileView, ClaimListData, ItemPostListData, MeView } from "../../types/api";
 
 const ARCHIVE_MENU = [
-  { label: "自报学校与校区", desc: "设置公开的校园范围", url: "/pages/campus/campus", icon: "/assets/ui/my-school.png", tone: "green", code: "01" },
+  { label: "基本信息", desc: "学校与校区，公开的校园范围", url: "/pages/campus/campus", icon: "/assets/ui/my-school.png", tone: "green", code: "01" },
   { label: "黑名单", desc: "管理已屏蔽的用户", url: "/pages/blocks/blocks", icon: "/assets/ui/my-block.png", tone: "muted", code: "02" },
   { label: "举报记录", desc: "查看提交状态与处理结果", url: "/pages/reports/reports", icon: "/assets/ui/my-report.png", tone: "orange", code: "03" },
   { label: "设置与说明", desc: "隐私、协议与平台边界", url: "/pages/settings/settings", icon: "/assets/ui/my-settings.png", tone: "gray", code: "04" },
@@ -20,6 +20,8 @@ Page({
     archiveMenu: ARCHIVE_MENU,
     restricted: false,
     school: "",
+    campusName: "",
+    schoolLine: "未设置学校",
     nickname: "",
     avatarUrl: "",
     verified: false,
@@ -55,7 +57,16 @@ Page({
       }))
       .catch(() => {});
     request<CampusProfileView>({ url: "/me/campus-profile" })
-      .then((p) => this.setData({ school: p.school || "", verified: p.verificationStatus === "EMAIL_VERIFIED" }))
+      .then((p) => {
+        const school = p.schoolName || "";
+        const campusName = p.campusName || "";
+        this.setData({
+          school,
+          campusName,
+          schoolLine: school ? (school + (campusName ? " · " + campusName : "")) : "未设置学校",
+          verified: p.verificationStatus === "EMAIL_VERIFIED",
+        });
+      })
       .catch(() => {});
     this.loadActivityCounts();
   },

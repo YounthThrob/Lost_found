@@ -44,10 +44,19 @@ EXPECTED = {
     "me_valid": {"status": 200, "has_id": True, "user_status": "ACTIVE", "agreement_accepted": False},
     "confirm_agreement": {"status": 200, "agreement_accepted": True},
     "me_after_agreement": {"status": 200, "agreement_accepted": True},
-    "campus_unset": {"status": 200, "school": None, "verification_status": "SELF_DECLARED"},
-    "campus_put": {"status": 200, "school": "南方大学", "campus": "东校区", "verification_status": "SELF_DECLARED"},
-    "campus_get": {"status": 200, "school": "南方大学", "campus": "东校区"},
+    "directory_search_schools": {"status": 200, "has_school": True},
+    "directory_list_campuses": {"status": 200, "has_campus": True},
+    "directory_campuses_school_not_found": {"status": 404, "error_code": "NOT_FOUND"},
+    "campus_unset": {"status": 200, "school_id": None, "verification_status": "SELF_DECLARED"},
+    "campus_put": {"status": 200, "school_name": "南方大学", "campus_name": "东校区", "verification_status": "SELF_DECLARED"},
+    "campus_get": {"status": 200, "school_name": "南方大学", "campus_name": "东校区"},
+    "campus_missing_school": {"status": 422, "error_code": "VALIDATION_FAILED"},
     "campus_invalid": {"status": 422, "error_code": "VALIDATION_FAILED"},
+    "directory_campus_request": {"status": 200, "campus_status": "PENDING"},
+    "directory_campus_request_duplicate": {"status": 422, "error_code": "VALIDATION_FAILED"},
+    "directory_campus_review": {"status": 200, "campus_status": "ACTIVE"},
+    "directory_campus_active_only": {"status": 200, "has_new_campus": False},
+    "directory_campus_after_review": {"status": 200, "has_new_campus": True},
     "campus_verification_send": {"status": 200, "expires_in_seconds": 300},
     "campus_verification_invalid_email": {"status": 422, "error_code": "VALIDATION_FAILED"},
     "campus_verification_invalid_code": {"status": 422, "error_code": "VERIFICATION_CODE_INVALID"},
@@ -64,7 +73,7 @@ EXPECTED = {
     "profile_me_after_avatar": {"status": 200, "avatar_url_prefix": True},
     "profile_not_in_public": {"no_nickname": True, "no_avatar": True},
     "listing_create_unconfirmed": {"status": 403, "error_code": "AGREEMENT_NOT_ACCEPTED"},
-    "listing_create": {"status": 200, "post_status": "DRAFT", "has_id": True},
+    "listing_create": {"status": 200, "post_status": "DRAFT", "has_id": True, "school_name": "南方大学"},
     "listing_search_draft_hidden": {"status": 200, "total": 0},
     "listing_detail_draft_hidden": {"status": 404, "error_code": "NOT_FOUND"},
     "listing_publish": {"status": 200, "post_status": "PUBLISHED"},
@@ -85,6 +94,8 @@ EXPECTED = {
     "listing_invalid_close": {"status": 409, "error_code": "INVALID_STATE_TRANSITION"},
     "listing_not_found": {"status": 404, "error_code": "NOT_FOUND"},
     "listing_empty_title": {"status": 422, "error_code": "VALIDATION_FAILED"},
+    "listing_invalid_school": {"status": 422, "error_code": "VALIDATION_FAILED"},
+    "listing_filter_by_school": {"status": 200, "all_match_school": True},
     "image_upload": {"status": 200, "has_id": True, "has_url": True, "sort_order": 0},
     "image_draft_visible_to_author": {"status": 200, "images_count": 1},
     "image_draft_hidden_non_author": {"status": 404, "error_code": "NOT_FOUND"},
@@ -201,8 +212,6 @@ POST_BODY = {
     "category": "校园卡",
     "title": "遗失校园卡",
     "publicDescription": "在图书馆附近遗失一张校园卡",
-    "school": "南方大学",
-    "campus": "东校区",
 }
 
 BANNED_BODY = {
@@ -210,7 +219,6 @@ BANNED_BODY = {
     "category": "其他",
     "title": "高价回收",
     "publicDescription": "要求先转账到指定账户",
-    "school": "南方大学",
 }
 
 FOUND_BODY = {
@@ -218,7 +226,6 @@ FOUND_BODY = {
     "category": "校园卡",
     "title": "拾到校园卡",
     "publicDescription": "在食堂拾到一张校园卡",
-    "school": "南方大学",
 }
 
 
@@ -273,30 +280,59 @@ def probe(base: str) -> dict:
         "agreement_accepted": r6.json().get("data", {}).get("agreementAccepted"),
     }
 
+    # ---- school/campus directory ----
+    rs0 = httpx.get(base + "/api/v1/directory/schools", headers=headers, params={"keyword": "南方大学"})
+    school_items = rs0.json().get("data", {}).get("items", [])
+    school_id = school_items[0]["id"] if school_items else None
+    sig["directory_search_schools"] = {
+        "status": rs0.status_code,
+        "has_school": any(i.get("name") == "南方大学" for i in school_items),
+    }
+
+    rc0 = httpx.get(base + f"/api/v1/directory/schools/{school_id}/campuses", headers=headers)
+    campus_items = rc0.json().get("data", {}).get("items", [])
+    campus_id = next((i["id"] for i in campus_items if i.get("name") == "东校区"), None)
+    sig["directory_list_campuses"] = {
+        "status": rc0.status_code,
+        "has_campus": campus_id is not None,
+    }
+
+    rn0 = httpx.get(base + "/api/v1/directory/schools/nonexistent-school/campuses", headers=headers)
+    sig["directory_campuses_school_not_found"] = {
+        "status": rn0.status_code,
+        "error_code": rn0.json().get("error", {}).get("code"),
+    }
+
     r7 = httpx.get(base + "/api/v1/me/campus-profile", headers=headers)
     sig["campus_unset"] = {
         "status": r7.status_code,
-        "school": r7.json().get("data", {}).get("school"),
+        "school_id": r7.json().get("data", {}).get("schoolId"),
         "verification_status": r7.json().get("data", {}).get("verificationStatus"),
     }
 
     r8 = httpx.put(base + "/api/v1/me/campus-profile", headers=headers,
-                   json={"school": "南方大学", "campus": "东校区"})
+                   json={"schoolId": school_id, "campusId": campus_id})
     sig["campus_put"] = {
         "status": r8.status_code,
-        "school": r8.json().get("data", {}).get("school"),
-        "campus": r8.json().get("data", {}).get("campus"),
+        "school_name": r8.json().get("data", {}).get("schoolName"),
+        "campus_name": r8.json().get("data", {}).get("campusName"),
         "verification_status": r8.json().get("data", {}).get("verificationStatus"),
     }
 
     r9 = httpx.get(base + "/api/v1/me/campus-profile", headers=headers)
     sig["campus_get"] = {
         "status": r9.status_code,
-        "school": r9.json().get("data", {}).get("school"),
-        "campus": r9.json().get("data", {}).get("campus"),
+        "school_name": r9.json().get("data", {}).get("schoolName"),
+        "campus_name": r9.json().get("data", {}).get("campusName"),
     }
 
-    r10 = httpx.put(base + "/api/v1/me/campus-profile", headers=headers, json={"school": ""})
+    r10a = httpx.put(base + "/api/v1/me/campus-profile", headers=headers, json={})
+    sig["campus_missing_school"] = {
+        "status": r10a.status_code,
+        "error_code": r10a.json().get("error", {}).get("code"),
+    }
+
+    r10 = httpx.put(base + "/api/v1/me/campus-profile", headers=headers, json={"schoolId": "nonexistent-school"})
     sig["campus_invalid"] = {
         "status": r10.status_code,
         "error_code": r10.json().get("error", {}).get("code"),
@@ -415,6 +451,7 @@ def probe(base: str) -> dict:
         "status": r12.status_code,
         "post_status": r12.json().get("data", {}).get("status"),
         "has_id": bool(r12.json().get("data", {}).get("id")),
+        "school_name": r12.json().get("data", {}).get("schoolName"),
     }
     post_id = r12.json()["data"]["id"]
 
@@ -447,6 +484,13 @@ def probe(base: str) -> dict:
         "status": r17.status_code,
         "total": r17.json().get("data", {}).get("pagination", {}).get("total"),
         "pagination": r17.json().get("data", {}).get("pagination"),
+    }
+
+    r17b = httpx.get(base + "/api/v1/posts", headers=headers, params={"schoolId": school_id})
+    filtered_items = r17b.json().get("data", {}).get("items", [])
+    sig["listing_filter_by_school"] = {
+        "status": r17b.status_code,
+        "all_match_school": len(filtered_items) > 0 and all(i.get("schoolId") == school_id for i in filtered_items),
     }
 
     # ---- 分页契约 ----
@@ -517,6 +561,12 @@ def probe(base: str) -> dict:
     sig["listing_empty_title"] = {
         "status": r23.status_code,
         "error_code": r23.json().get("error", {}).get("code"),
+    }
+
+    r23b = httpx.post(base + "/api/v1/posts", headers=headers, json={**POST_BODY, "schoolId": "nonexistent-school"})
+    sig["listing_invalid_school"] = {
+        "status": r23b.status_code,
+        "error_code": r23b.json().get("error", {}).get("code"),
     }
 
     # ---- item-images ----
@@ -1162,6 +1212,41 @@ def probe(base: str) -> dict:
     operator_token = httpx.post(base + "/api/v1/session/wechat", json={"code": "operator-code"}) \
         .json()["data"]["token"]
     operator_headers = {"Authorization": "Bearer " + operator_token}
+
+    # ---- campus request & review ----
+    rca1 = httpx.post(base + f"/api/v1/directory/schools/{school_id}/campuses", headers=headers,
+                      json={"name": "北校区"})
+    new_campus_id = rca1.json().get("data", {}).get("id")
+    sig["directory_campus_request"] = {
+        "status": rca1.status_code,
+        "campus_status": rca1.json().get("data", {}).get("status"),
+    }
+
+    rca2 = httpx.post(base + f"/api/v1/directory/schools/{school_id}/campuses", headers=headers,
+                      json={"name": "北校区"})
+    sig["directory_campus_request_duplicate"] = {
+        "status": rca2.status_code,
+        "error_code": rca2.json().get("error", {}).get("code"),
+    }
+
+    rca3 = httpx.get(base + f"/api/v1/directory/schools/{school_id}/campuses", headers=headers)
+    sig["directory_campus_active_only"] = {
+        "status": rca3.status_code,
+        "has_new_campus": any(i.get("id") == new_campus_id for i in rca3.json().get("data", {}).get("items", [])),
+    }
+
+    rca4 = httpx.post(base + f"/api/v1/admin/campuses/{new_campus_id}/review", headers=operator_headers,
+                      json={"decision": "APPROVE"})
+    sig["directory_campus_review"] = {
+        "status": rca4.status_code,
+        "campus_status": rca4.json().get("data", {}).get("status"),
+    }
+
+    rca5 = httpx.get(base + f"/api/v1/directory/schools/{school_id}/campuses", headers=headers)
+    sig["directory_campus_after_review"] = {
+        "status": rca5.status_code,
+        "has_new_campus": any(i.get("id") == new_campus_id for i in rca5.json().get("data", {}).get("items", [])),
+    }
 
     ro1 = httpx.post(base + "/api/v1/admin/users/some-user/restrict", headers=headers2,
                      json={"reason": "违规"})

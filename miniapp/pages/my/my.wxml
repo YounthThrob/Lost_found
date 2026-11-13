@@ -24,7 +24,7 @@
       <view class="profile-copy">
         <view class="profile-kicker">CAMPUS PROFILE</view>
         <view wx:if="{{nickname}}" class="profile-nickname">{{nickname}}</view>
-        <view class="profile-school">{{school || '未设置学校'}}</view>
+        <view class="profile-school">{{schoolLine}}</view>
         <view class="profile-meta">
           <view class="verify-chip {{verified ? 'verified' : ''}}"><view class="verify-dot"></view><text>{{verified ? '已核验' : '未核验'}}</text></view>
           <text class="profile-note">学校信息由用户自报</text>

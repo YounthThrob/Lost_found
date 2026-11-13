@@ -17,8 +17,8 @@ class ProfileUpdate(BaseModel):
 
 
 class CampusProfileUpdate(BaseModel):
-    school: str
-    campus: str | None = None
+    schoolId: str
+    campusId: str | None = None
 
 
 class EmailVerificationSend(BaseModel):
@@ -31,13 +31,7 @@ class EmailVerificationConfirm(BaseModel):
 
 
 def _profile_view(user) -> dict:
-    return {
-        "school": user.school,
-        "campus": user.campus,
-        "verificationStatus": user.verification_status,
-        "verifiedEmail": user.verified_email,
-        "emailVerifiedAt": user.email_verified_at,
-    }
+    return service.campus_profile_view(user)
 
 
 @router.post("/session/wechat")
@@ -84,7 +78,7 @@ def get_campus_profile(user_id: str = Depends(get_current_user)):
 
 @router.put("/me/campus-profile")
 def put_campus_profile(request: CampusProfileUpdate, user_id: str = Depends(get_current_user)):
-    user = service.update_campus_profile(user_id, request.school, request.campus)
+    user = service.update_campus_profile(user_id, request.schoolId, request.campusId)
     return envelope(_profile_view(user))
 
 

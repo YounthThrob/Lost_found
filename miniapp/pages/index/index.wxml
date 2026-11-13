@@ -82,7 +82,7 @@
         <view class="post-foot">
           <view class="post-location">
             <image class="location-icon" src="/assets/ui/location.png" mode="aspectFit" />
-            <text>{{item.campus || item.school}} · {{item.area || item.category}}</text>
+            <text>{{item.campusName || item.schoolName}} · {{item.area || item.category}}</text>
           </view>
           <view class="self-declared">用户自报 · 未认证</view>
         </view>

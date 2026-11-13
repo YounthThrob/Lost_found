@@ -19,7 +19,7 @@ FOUND_BODY = {
     "category": "校园卡",
     "title": "拾到校园卡",
     "publicDescription": "在食堂拾到一张校园卡",
-    "school": "南方大学",
+    "schoolId": "018c0000-0000-7000-8000-000000000001",
 }
 
 

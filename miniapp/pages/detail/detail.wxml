@@ -15,8 +15,8 @@
     <view class="desc">{{post.publicDescription}}</view>
     <view class="divider"></view>
     <view class="meta">
-      <view class="meta-row"><text class="meta-label">学校</text>{{post.school}}</view>
-      <view class="meta-row" wx:if="{{post.campus}}"><text class="meta-label">校区</text>{{post.campus}}</view>
+      <view class="meta-row"><text class="meta-label">学校</text>{{post.schoolName}}</view>
+      <view class="meta-row" wx:if="{{post.campusName}}"><text class="meta-label">校区</text>{{post.campusName}}</view>
       <view class="meta-row" wx:if="{{post.area}}"><text class="meta-label">区域</text>{{post.area}}</view>
       <view class="meta-row"><text class="meta-label">发布时间</text>{{timeLabel}}</view>
     </view>

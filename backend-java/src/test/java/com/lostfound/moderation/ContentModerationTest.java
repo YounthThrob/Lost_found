@@ -23,10 +23,10 @@ class ContentModerationTest {
 
     private static final String CLEAN_BODY =
         "{\"type\":\"LOST\",\"category\":\"校园卡\",\"title\":\"遗失校园卡\","
-            + "\"publicDescription\":\"在图书馆附近遗失一张校园卡\",\"school\":\"南方大学\"}";
+            + "\"publicDescription\":\"在图书馆附近遗失一张校园卡\",\"schoolId\":\"018c0000-0000-7000-8000-000000000001\"}";
     private static final String BANNED_BODY =
         "{\"type\":\"LOST\",\"category\":\"其他\",\"title\":\"高价回收\","
-            + "\"publicDescription\":\"要求先转账到指定账户\",\"school\":\"南方大学\"}";
+            + "\"publicDescription\":\"要求先转账到指定账户\",\"schoolId\":\"018c0000-0000-7000-8000-000000000001\"}";
 
     @Autowired
     private MockMvc mockMvc;

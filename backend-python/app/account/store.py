@@ -13,8 +13,8 @@ class UserAccount:
     openid: str
     status: str
     agreement_accepted_at: str | None = None
-    school: str | None = None
-    campus: str | None = None
+    school_id: str | None = None
+    campus_id: str | None = None
     role: str = "USER"
     verification_status: str = "SELF_DECLARED"
     verified_email: str | None = None
@@ -60,11 +60,11 @@ class InMemoryUserStore:
         self._by_openid[user.openid] = updated
         return updated
 
-    def update_campus(self, user_id: str, school: str, campus: str | None) -> UserAccount | None:
+    def update_campus(self, user_id: str, school_id: str, campus_id: str | None) -> UserAccount | None:
         user = self.find_by_id(user_id)
         if user is None:
             return None
-        updated = replace(user, school=school, campus=campus)
+        updated = replace(user, school_id=school_id, campus_id=campus_id)
         self._by_openid[user.openid] = updated
         return updated
 

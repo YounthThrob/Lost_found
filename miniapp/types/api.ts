@@ -48,8 +48,10 @@ export interface ItemPostView {
   category: string;
   title: string;
   publicDescription: string;
-  school: string;
-  campus?: string | null;
+  schoolId: string;
+  schoolName: string;
+  campusId?: string | null;
+  campusName?: string | null;
   area?: string | null;
   status: PostStatus;
   authorId: string;
@@ -83,11 +85,38 @@ export interface ProfileView {
 }
 
 export interface CampusProfileView {
-  school: string | null;
-  campus: string | null;
+  schoolId: string | null;
+  schoolName: string | null;
+  campusId: string | null;
+  campusName: string | null;
   verificationStatus: VerificationStatus;
   verifiedEmail: string | null;
   emailVerifiedAt: string | null;
+}
+
+export interface SchoolView {
+  id: string;
+  name: string;
+  aliases: string[];
+}
+
+export interface SchoolListData {
+  items: SchoolView[];
+  pagination: Pagination;
+}
+
+export type CampusStatus = "PENDING" | "ACTIVE" | "REJECTED";
+
+export interface CampusView {
+  id: string;
+  schoolId: string;
+  name: string;
+  status: CampusStatus;
+}
+
+export interface CampusListData {
+  items: CampusView[];
+  pagination: Pagination;
 }
 
 export interface EmailVerificationSendResponse {

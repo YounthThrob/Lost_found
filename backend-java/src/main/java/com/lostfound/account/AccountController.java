@@ -1,5 +1,6 @@
 package com.lostfound.account;
 
+import com.lostfound.directory.DirectoryService;
 import com.lostfound.shared.Envelope;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -20,9 +21,11 @@ import java.util.Map;
 public class AccountController {
 
     private final AccountService accountService;
+    private final DirectoryService directoryService;
 
-    public AccountController(AccountService accountService) {
+    public AccountController(AccountService accountService, DirectoryService directoryService) {
         this.accountService = accountService;
+        this.directoryService = directoryService;
     }
 
     public record LoginRequest(String code) {
@@ -34,11 +37,11 @@ public class AccountController {
     public record ProfileView(String nickname, String avatarUrl) {
     }
 
-    public record CampusProfileUpdate(String school, String campus) {
+    public record CampusProfileUpdate(String schoolId, String campusId) {
     }
 
-    public record CampusProfileView(String school, String campus, String verificationStatus,
-                                    String verifiedEmail, String emailVerifiedAt) {
+    public record CampusProfileView(String schoolId, String schoolName, String campusId, String campusName,
+                                    String verificationStatus, String verifiedEmail, String emailVerifiedAt) {
     }
 
     public record EmailVerificationSend(String email) {
@@ -99,7 +102,7 @@ public class AccountController {
     public Envelope.Response<CampusProfileView> putCampusProfile(Authentication authentication,
                                                                  @RequestBody CampusProfileUpdate request) {
         UserAccount user = accountService.updateCampusProfile(
-            authentication.getName(), request.school(), request.campus());
+            authentication.getName(), request.schoolId(), request.campusId());
         return Envelope.ok(profileView(user));
     }
 
@@ -120,8 +123,9 @@ public class AccountController {
     }
 
     private CampusProfileView profileView(UserAccount user) {
-        return new CampusProfileView(user.school(), user.campus(), user.verificationStatus(),
-            user.verifiedEmail(), user.emailVerifiedAt());
+        return new CampusProfileView(user.schoolId(), directoryService.findSchoolName(user.schoolId()),
+            user.campusId(), directoryService.findCampusName(user.campusId()),
+            user.verificationStatus(), user.verifiedEmail(), user.emailVerifiedAt());
     }
 
     private ProfileView meProfileView(UserAccount user) {

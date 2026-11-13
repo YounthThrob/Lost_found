@@ -1,6 +1,11 @@
 package com.lostfound.listing;
 
 import com.lostfound.abuse.RateLimiter;
+import com.lostfound.account.InMemoryUserStore;
+import com.lostfound.account.UserAccount;
+import com.lostfound.directory.Campus;
+import com.lostfound.directory.DirectoryService;
+import com.lostfound.directory.School;
 import com.lostfound.moderation.ContentModerator;
 import com.lostfound.shared.BusinessException;
 import com.lostfound.shared.ErrorCode;
@@ -18,11 +23,14 @@ import java.util.UUID;
 public class ListingService {
 
     public record ItemPostCreate(String type, String category, String title,
-                                 String publicDescription, String school, String campus, String area) {
+                                 String publicDescription, String schoolId, String campusId, String area) {
     }
 
     public record ItemPostUpdate(String type, String category, String title,
-                                 String publicDescription, String school, String campus, String area) {
+                                 String publicDescription, String schoolId, String campusId, String area) {
+    }
+
+    public record Location(String schoolId, String schoolName, String campusId, String campusName) {
     }
 
     public record Pagination(int page, int pageSize, int total, boolean hasMore) {
@@ -48,26 +56,31 @@ public class ListingService {
     private final ContentModerator moderator;
     private final RateLimiter rateLimiter;
     private final Storage storage;
+    private final InMemoryUserStore userStore;
+    private final DirectoryService directoryService;
 
     public ListingService(ItemPostStore store, ItemImageStore imageStore, ContentModerator moderator,
-                          RateLimiter rateLimiter, Storage storage) {
+                          RateLimiter rateLimiter, Storage storage,
+                          InMemoryUserStore userStore, DirectoryService directoryService) {
         this.store = store;
         this.imageStore = imageStore;
         this.moderator = moderator;
         this.rateLimiter = rateLimiter;
         this.storage = storage;
+        this.userStore = userStore;
+        this.directoryService = directoryService;
     }
 
     public ItemPost createDraft(String authorId, ItemPostCreate input) {
         rateLimiter.check(authorId, "post");
         String type = normalizeType(input.type());
-        validate(type, input.category(), input.title(), input.publicDescription(), input.school(),
-            input.campus(), input.area());
+        validate(type, input.category(), input.title(), input.publicDescription(), input.area());
+        Location location = resolveLocation(authorId, input.schoolId(), input.campusId());
         String now = Instant.now().toString();
         ItemPost post = new ItemPost(UUID.randomUUID().toString(), authorId, type,
             input.category().trim(), input.title().trim(), input.publicDescription().trim(),
-            input.school().trim(), normalize(input.campus()), normalize(input.area()),
-            "DRAFT", now, now);
+            location.schoolId(), location.schoolName(), location.campusId(), location.campusName(),
+            normalize(input.area()), "DRAFT", now, now);
         store.save(post);
         return post;
     }
@@ -78,13 +91,13 @@ public class ListingService {
             throw new BusinessException(ErrorCode.INVALID_STATE_TRANSITION);
         }
         String type = normalizeType(input.type());
-        validate(type, input.category(), input.title(), input.publicDescription(), input.school(),
-            input.campus(), input.area());
+        validate(type, input.category(), input.title(), input.publicDescription(), input.area());
+        Location location = resolveLocation(authorId, input.schoolId(), input.campusId());
         String now = Instant.now().toString();
         ItemPost updated = new ItemPost(post.id(), post.authorId(), type,
             input.category().trim(), input.title().trim(), input.publicDescription().trim(),
-            input.school().trim(), normalize(input.campus()), normalize(input.area()),
-            post.status(), post.createdAt(), now);
+            location.schoolId(), location.schoolName(), location.campusId(), location.campusName(),
+            normalize(input.area()), post.status(), post.createdAt(), now);
         store.save(updated);
         return updated;
     }
@@ -135,16 +148,16 @@ public class ListingService {
         return post;
     }
 
-    public SearchResult search(String keyword, String type, String category, String school,
-                               String campus, int page, int pageSize) {
+    public SearchResult search(String keyword, String type, String category, String schoolId,
+                               String campusId, int page, int pageSize) {
         if (page < 1 || pageSize < 1 || pageSize > MAX_PAGE_SIZE) {
             throw new BusinessException(ErrorCode.VALIDATION_FAILED);
         }
         List<ItemPost> all = store.listVisible().stream()
             .filter(p -> matches(type, p.type()))
             .filter(p -> matches(category, p.category()))
-            .filter(p -> matches(school, p.school()))
-            .filter(p -> matches(campus, p.campus()))
+            .filter(p -> matches(schoolId, p.schoolId()))
+            .filter(p -> matches(campusId, p.campusId()))
             .filter(p -> keyword == null || keyword.isBlank()
                 || p.title().toLowerCase().contains(keyword.trim().toLowerCase())
                 || p.publicDescription().toLowerCase().contains(keyword.trim().toLowerCase()))
@@ -236,20 +249,41 @@ public class ListingService {
     }
 
     private void validate(String type, String category, String title, String publicDescription,
-                          String school, String campus, String area) {
+                          String area) {
         if (!"LOST".equals(type) && !"FOUND".equals(type)) {
             throw new BusinessException(ErrorCode.VALIDATION_FAILED);
         }
         requireText(title, MAX_TITLE);
         requireText(category, MAX_CATEGORY);
         requireText(publicDescription, MAX_DESCRIPTION);
-        requireText(school, MAX_FIELD);
-        if (campus != null && campus.trim().length() > MAX_FIELD) {
-            throw new BusinessException(ErrorCode.VALIDATION_FAILED);
-        }
         if (area != null && area.trim().length() > MAX_FIELD) {
             throw new BusinessException(ErrorCode.VALIDATION_FAILED);
         }
+    }
+
+    private Location resolveLocation(String authorId, String schoolId, String campusId) {
+        School school;
+        if (schoolId != null && !schoolId.isBlank()) {
+            school = directoryService.findSchool(schoolId);
+        } else {
+            UserAccount user = userStore.findById(authorId);
+            school = (user == null || user.schoolId() == null)
+                ? null : directoryService.findSchool(user.schoolId());
+        }
+        if (school == null) {
+            throw new BusinessException(ErrorCode.VALIDATION_FAILED);
+        }
+        String resolvedCampusId = null;
+        String campusName = null;
+        if (campusId != null && !campusId.isBlank()) {
+            Campus campus = directoryService.findActiveCampus(school.id(), campusId);
+            if (campus == null) {
+                throw new BusinessException(ErrorCode.VALIDATION_FAILED);
+            }
+            resolvedCampusId = campus.id();
+            campusName = campus.name();
+        }
+        return new Location(school.id(), school.name(), resolvedCampusId, campusName);
     }
 
     private String normalizeType(String type) {
@@ -284,7 +318,7 @@ public class ListingService {
 
     private ItemPost withStatus(ItemPost post, String status, String now) {
         return new ItemPost(post.id(), post.authorId(), post.type(), post.category(), post.title(),
-            post.publicDescription(), post.school(), post.campus(), post.area(),
-            status, post.createdAt(), now);
+            post.publicDescription(), post.schoolId(), post.schoolName(), post.campusId(), post.campusName(),
+            post.area(), status, post.createdAt(), now);
     }
 }

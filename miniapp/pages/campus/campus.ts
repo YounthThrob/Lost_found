@@ -1,14 +1,30 @@
 import { request } from "../../utils/request";
 import { formatTime } from "../../utils/format";
-import type { CampusProfileView, EmailVerificationSendResponse } from "../../types/api";
+import type {
+  CampusListData,
+  CampusProfileView,
+  CampusView,
+  EmailVerificationSendResponse,
+  SchoolListData,
+  SchoolView,
+} from "../../types/api";
 
 Page({
   data: {
-    school: "",
-    campus: "",
+    // 基本信息（学校/校区从目录选择）
+    schoolId: "",
+    schoolName: "",
+    campusId: "",
+    campusName: "",
+    schoolKeyword: "",
+    schools: [] as SchoolView[],
+    campuses: [] as CampusView[],
+    searching: false,
+    // 校园身份
     verificationStatus: "SELF_DECLARED",
     verifiedEmail: "",
     emailVerifiedAt: "",
+    // 邮箱核验
     email: "",
     code: "",
     codeSent: false,
@@ -24,26 +40,86 @@ Page({
     try {
       const p = await request<CampusProfileView>({ url: "/me/campus-profile" });
       this.setData({
-        school: p.school || "",
-        campus: p.campus || "",
+        schoolId: p.schoolId || "",
+        schoolName: p.schoolName || "",
+        campusId: p.campusId || "",
+        campusName: p.campusName || "",
         verificationStatus: p.verificationStatus,
         verifiedEmail: p.verifiedEmail || "",
         emailVerifiedAt: p.emailVerifiedAt ? formatTime(p.emailVerifiedAt) : "",
       });
+      if (p.schoolId) {
+        this.loadCampuses(p.schoolId);
+      } else {
+        this.searchSchools();
+      }
     } catch (e: any) {
       wx.showToast({ title: e.message, icon: "none" });
     }
   },
 
-  onInput(e: any) {
-    const field = e.currentTarget.dataset.field;
-    this.setData({ [field]: e.detail.value } as any);
+  // ===== 学校目录搜索 =====
+  onSearchSchool(e: any) {
+    this.setData({ schoolKeyword: e.detail.value });
+    this.searchSchools();
   },
 
+  async searchSchools() {
+    const keyword = this.data.schoolKeyword.trim();
+    this.setData({ searching: true });
+    try {
+      const data = await request<SchoolListData>({
+        url: "/directory/schools",
+        data: { page: 1, pageSize: 20, ...(keyword ? { keyword } : {}) },
+      });
+      this.setData({ schools: data.items });
+    } catch (e: any) {
+      wx.showToast({ title: e.message, icon: "none" });
+    } finally {
+      this.setData({ searching: false });
+    }
+  },
+
+  async loadCampuses(schoolId: string) {
+    try {
+      const data = await request<CampusListData>({ url: `/directory/schools/${schoolId}/campuses` });
+      this.setData({ campuses: data.items });
+    } catch (e: any) {
+      wx.showToast({ title: e.message, icon: "none" });
+    }
+  },
+
+  onSelectSchool(e: any) {
+    const { id, name } = e.currentTarget.dataset;
+    this.setData({
+      schoolId: id,
+      schoolName: name,
+      campusId: "",
+      campusName: "",
+      schoolKeyword: "",
+      schools: [],
+      campuses: [],
+    });
+    this.loadCampuses(id);
+  },
+
+  onChangeSchool() {
+    this.setData({ schoolId: "", schoolName: "", campusId: "", campusName: "", campuses: [] });
+  },
+
+  onSelectCampus(e: any) {
+    const { id, name } = e.currentTarget.dataset;
+    this.setData({ campusId: id, campusName: name });
+  },
+
+  onClearCampus() {
+    this.setData({ campusId: "", campusName: "" });
+  },
+
+  // ===== 保存基本信息 =====
   async onSave() {
-    const school = this.data.school.trim();
-    if (!school) {
-      wx.showToast({ title: "请填写学校", icon: "none" });
+    if (!this.data.schoolId) {
+      wx.showToast({ title: "请选择学校", icon: "none" });
       return;
     }
     this.setData({ saving: true });
@@ -51,7 +127,7 @@ Page({
       await request<CampusProfileView>({
         url: "/me/campus-profile",
         method: "PUT",
-        data: { school, campus: this.data.campus.trim() || null },
+        data: { schoolId: this.data.schoolId, campusId: this.data.campusId || null },
       });
       wx.showToast({ title: "已保存", icon: "success" });
     } catch (e: any) {
@@ -59,6 +135,11 @@ Page({
     } finally {
       this.setData({ saving: false });
     }
+  },
+
+  onInput(e: any) {
+    const field = e.currentTarget.dataset.field;
+    this.setData({ [field]: e.detail.value } as any);
   },
 
   async onSendCode() {

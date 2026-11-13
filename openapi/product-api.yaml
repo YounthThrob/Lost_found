@@ -150,7 +150,7 @@ paths:
         - bearerAuth: []
       responses:
         "200":
-          description: 自报学校与校区（未设置时 school/campus 为 null）
+          description: 自报学校与校区（未设置时 schoolId/campusId 为 null）
           content:
             application/json:
               schema:
@@ -253,6 +253,175 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
+  /directory/schools:
+    get:
+      summary: 查询学校目录
+      operationId: searchSchools
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: keyword
+          in: query
+          required: false
+          schema:
+            type: string
+          description: 学校名称或别名关键词
+        - name: page
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+        - name: pageSize
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 20
+      responses:
+        "200":
+          description: 学校目录列表（分页）
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SchoolListResponse"
+        "401":
+          description: 会话无效或已过期
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "422":
+          description: 分页参数非法
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  /directory/schools/{schoolId}/campuses:
+    get:
+      summary: 查询学校校区
+      operationId: listCampuses
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: schoolId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: 该校已审核通过（ACTIVE）的校区列表
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CampusListResponse"
+        "401":
+          description: 会话无效或已过期
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: 学校不存在
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+    post:
+      summary: 申请新增校区
+      operationId: requestCampus
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: schoolId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CampusCreate"
+      responses:
+        "200":
+          description: 申请成功，校区进入 PENDING
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CampusResponse"
+        "401":
+          description: 会话无效或已过期
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: 学校不存在
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "422":
+          description: 校区重名或名称非法
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  /admin/campuses/{campusId}/review:
+    post:
+      summary: 运营审核校区申请
+      operationId: reviewCampus
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: campusId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CampusReview"
+      responses:
+        "200":
+          description: 审核完成，校区状态为 ACTIVE 或 REJECTED
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CampusResponse"
+        "401":
+          description: 会话无效或已过期
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "403":
+          description: 无运营管理权限
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: 校区不存在
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "422":
+          description: 参数校验失败
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
   /posts:
     get:
       summary: 搜索与筛选已发布信息
@@ -278,12 +447,12 @@ paths:
           required: false
           schema:
             type: string
-        - name: school
+        - name: schoolId
           in: query
           required: false
           schema:
             type: string
-        - name: campus
+        - name: campusId
           in: query
           required: false
           schema:
@@ -1982,17 +2151,135 @@ components:
         timestamp:
           type: string
           format: date-time
+    SchoolView:
+      type: object
+      required:
+        - id
+        - name
+        - aliases
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+          description: 学校正式名称
+        aliases:
+          type: array
+          items:
+            type: string
+          description: 学校别名
+    SchoolListData:
+      type: object
+      required:
+        - items
+        - pagination
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/SchoolView"
+        pagination:
+          $ref: "#/components/schemas/Pagination"
+    SchoolListResponse:
+      type: object
+      required:
+        - data
+        - requestId
+        - timestamp
+      properties:
+        data:
+          $ref: "#/components/schemas/SchoolListData"
+        requestId:
+          type: string
+        timestamp:
+          type: string
+          format: date-time
+    CampusView:
+      type: object
+      required:
+        - id
+        - schoolId
+        - name
+        - status
+      properties:
+        id:
+          type: string
+        schoolId:
+          type: string
+        name:
+          type: string
+          description: 校区名称
+        status:
+          type: string
+          enum: [PENDING, ACTIVE, REJECTED]
+    CampusListData:
+      type: object
+      required:
+        - items
+        - pagination
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/CampusView"
+        pagination:
+          $ref: "#/components/schemas/Pagination"
+    CampusListResponse:
+      type: object
+      required:
+        - data
+        - requestId
+        - timestamp
+      properties:
+        data:
+          $ref: "#/components/schemas/CampusListData"
+        requestId:
+          type: string
+        timestamp:
+          type: string
+          format: date-time
+    CampusCreate:
+      type: object
+      required:
+        - name
+      properties:
+        name:
+          type: string
+          description: 校区名称（非空，≤100 字符）
+    CampusReview:
+      type: object
+      required:
+        - decision
+      properties:
+        decision:
+          type: string
+          enum: [APPROVE, REJECT]
+          description: APPROVE=通过，REJECT=拒绝
+    CampusResponse:
+      type: object
+      required:
+        - data
+        - requestId
+        - timestamp
+      properties:
+        data:
+          $ref: "#/components/schemas/CampusView"
+        requestId:
+          type: string
+        timestamp:
+          type: string
+          format: date-time
     CampusProfileUpdate:
       type: object
       required:
-        - school
+        - schoolId
       properties:
-        school:
+        schoolId:
           type: string
-          description: 自报学校（必填，非空，≤100 字符）
-        campus:
+          description: 学校标识（必填，须为目录中已启用学校）
+        campusId:
           type: ["string", "null"]
-          description: 自报校区（可选，≤100 字符）
+          description: 校区标识（可选，须属于该学校且已审核通过）
     CampusProfileResponse:
       type: object
       required:
@@ -2005,10 +2292,18 @@ components:
           required:
             - verificationStatus
           properties:
-            school:
+            schoolId:
               type: ["string", "null"]
-            campus:
+              description: 学校标识（未设置为 null）
+            schoolName:
               type: ["string", "null"]
+              description: 学校名称（未设置为 null）
+            campusId:
+              type: ["string", "null"]
+              description: 校区标识（未设置为 null）
+            campusName:
+              type: ["string", "null"]
+              description: 校区名称（未设置为 null）
             verificationStatus:
               type: string
               enum:
@@ -2102,7 +2397,6 @@ components:
         - category
         - title
         - publicDescription
-        - school
       properties:
         type:
           type: string
@@ -2117,12 +2411,12 @@ components:
         publicDescription:
           type: string
           description: 公开描述（非空，≤2000 字符）
-        school:
-          type: string
-          description: 学校（非空，≤100 字符）
-        campus:
+        schoolId:
           type: ["string", "null"]
-          description: 校区（可选，≤100 字符）
+          description: 学校标识（可选，未提供时继承作者档案；须为目录中已启用学校）
+        campusId:
+          type: ["string", "null"]
+          description: 校区标识（可选，须属于该学校且已审核通过）
         area:
           type: ["string", "null"]
           description: 模糊区域（可选，≤100 字符）
@@ -2133,7 +2427,6 @@ components:
         - category
         - title
         - publicDescription
-        - school
       properties:
         type:
           type: string
@@ -2144,9 +2437,10 @@ components:
           type: string
         publicDescription:
           type: string
-        school:
-          type: string
-        campus:
+        schoolId:
+          type: ["string", "null"]
+          description: 学校标识（可选，未提供时继承作者档案）
+        campusId:
           type: ["string", "null"]
         area:
           type: ["string", "null"]
@@ -2158,7 +2452,10 @@ components:
         - category
         - title
         - publicDescription
-        - school
+        - schoolId
+        - schoolName
+        - campusId
+        - campusName
         - status
         - authorId
         - createdAt
@@ -2176,9 +2473,13 @@ components:
           type: string
         publicDescription:
           type: string
-        school:
+        schoolId:
           type: string
-        campus:
+        schoolName:
+          type: string
+        campusId:
+          type: ["string", "null"]
+        campusName:
           type: ["string", "null"]
         area:
           type: ["string", "null"]

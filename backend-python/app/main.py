@@ -11,6 +11,7 @@ from app.claim.router import router as claim_router
 from app.clue.router import router as clue_router
 from app.communication.router import router as communication_router
 from app.config import STORAGE_LOCAL_DIR
+from app.directory.router import router as directory_router
 from app.handover.router import router as handover_router
 from app.listing.router import router as listing_router
 from app.moderation.router import router as moderation_router
@@ -39,6 +40,7 @@ _media_dir = Path(STORAGE_LOCAL_DIR).resolve()
 _media_dir.mkdir(parents=True, exist_ok=True)
 app.mount("/media", StaticFiles(directory=str(_media_dir)), name="media")
 app.include_router(account_router, prefix="/api/v1")
+app.include_router(directory_router, prefix="/api/v1")
 app.include_router(bookmark_router, prefix="/api/v1")
 app.include_router(listing_router, prefix="/api/v1")
 app.include_router(moderation_router, prefix="/api/v1")

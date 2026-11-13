@@ -26,8 +26,8 @@ class ListingTest {
 
     private static final String CREATE_BODY =
         "{\"type\":\"LOST\",\"category\":\"校园卡\",\"title\":\"遗失校园卡\","
-            + "\"publicDescription\":\"在图书馆附近遗失一张校园卡\",\"school\":\"南方大学\","
-            + "\"campus\":\"东校区\",\"area\":\"图书馆\"}";
+            + "\"publicDescription\":\"在图书馆附近遗失一张校园卡\",\"schoolId\":\"018c0000-0000-7000-8000-000000000001\","
+            + "\"area\":\"图书馆\"}";
 
     @Autowired
     private MockMvc mockMvc;
@@ -108,7 +108,7 @@ class ListingTest {
         mockMvc.perform(post("/api/v1/posts").header("Authorization", bearer(token))
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("{\"type\":\"LOST\",\"category\":\"校园卡\",\"title\":\"\","
-                    + "\"publicDescription\":\"描述\",\"school\":\"南方大学\"}"))
+                    + "\"publicDescription\":\"描述\",\"schoolId\":\"018c0000-0000-7000-8000-000000000001\"}"))
             .andExpect(status().isUnprocessableEntity())
             .andExpect(jsonPath("$.error.code").value("VALIDATION_FAILED"));
     }
@@ -120,7 +120,7 @@ class ListingTest {
         mockMvc.perform(post("/api/v1/posts").header("Authorization", bearer(token))
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("{\"type\":\"OTHER\",\"category\":\"校园卡\",\"title\":\"标题\","
-                    + "\"publicDescription\":\"描述\",\"school\":\"南方大学\"}"))
+                    + "\"publicDescription\":\"描述\",\"schoolId\":\"018c0000-0000-7000-8000-000000000001\"}"))
             .andExpect(status().isUnprocessableEntity())
             .andExpect(jsonPath("$.error.code").value("VALIDATION_FAILED"));
     }
@@ -133,7 +133,7 @@ class ListingTest {
         mockMvc.perform(patch("/api/v1/posts/" + id).header("Authorization", bearer(token))
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("{\"type\":\"FOUND\",\"category\":\"雨伞\",\"title\":\"拾到雨伞\","
-                    + "\"publicDescription\":\"在食堂拾到一把雨伞\",\"school\":\"南方大学\",\"campus\":\"西校区\"}"))
+                    + "\"publicDescription\":\"在食堂拾到一把雨伞\",\"schoolId\":\"018c0000-0000-7000-8000-000000000001\"}"))
             .andExpect(status().isOk())
             .andExpect(jsonPath("$.data.type").value("FOUND"))
             .andExpect(jsonPath("$.data.title").value("拾到雨伞"))
@@ -150,7 +150,7 @@ class ListingTest {
         mockMvc.perform(patch("/api/v1/posts/" + id).header("Authorization", bearer(token))
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("{\"type\":\"LOST\",\"category\":\"校园卡\",\"title\":\"改标题\","
-                    + "\"publicDescription\":\"描述\",\"school\":\"南方大学\"}"))
+                    + "\"publicDescription\":\"描述\",\"schoolId\":\"018c0000-0000-7000-8000-000000000001\"}"))
             .andExpect(status().isConflict())
             .andExpect(jsonPath("$.error.code").value("INVALID_STATE_TRANSITION"));
     }
@@ -164,7 +164,7 @@ class ListingTest {
         mockMvc.perform(patch("/api/v1/posts/" + id).header("Authorization", bearer(token2))
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("{\"type\":\"LOST\",\"category\":\"校园卡\",\"title\":\"改标题\","
-                    + "\"publicDescription\":\"描述\",\"school\":\"南方大学\"}"))
+                    + "\"publicDescription\":\"描述\",\"schoolId\":\"018c0000-0000-7000-8000-000000000001\"}"))
             .andExpect(status().isNotFound())
             .andExpect(jsonPath("$.error.code").value("NOT_FOUND"));
     }
@@ -227,7 +227,7 @@ class ListingTest {
         String draftId = createDraft(token, CREATE_BODY);
 
         String foundBody = "{\"type\":\"FOUND\",\"category\":\"雨伞\",\"title\":\"拾到雨伞\","
-            + "\"publicDescription\":\"在食堂拾到一把雨伞\",\"school\":\"南方大学\",\"campus\":\"东校区\"}";
+            + "\"publicDescription\":\"在食堂拾到一把雨伞\",\"schoolId\":\"018c0000-0000-7000-8000-000000000001\"}";
         String foundId = createDraft(token, foundBody);
         mockMvc.perform(post("/api/v1/posts/" + foundId + "/publish").header("Authorization", bearer(token)))
             .andExpect(status().isOk());
@@ -261,7 +261,7 @@ class ListingTest {
         String token = confirmedToken("valid-code");
         for (int i = 0; i < 3; i++) {
             String body = "{\"type\":\"LOST\",\"category\":\"其他\",\"title\":\"物品" + i + "\","
-                + "\"publicDescription\":\"描述\",\"school\":\"南方大学\"}";
+                + "\"publicDescription\":\"描述\",\"schoolId\":\"018c0000-0000-7000-8000-000000000001\"}";
             String id = createDraft(token, body);
             mockMvc.perform(post("/api/v1/posts/" + id + "/publish").header("Authorization", bearer(token)))
                 .andExpect(status().isOk());

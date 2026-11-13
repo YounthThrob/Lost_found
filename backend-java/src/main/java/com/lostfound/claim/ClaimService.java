@@ -160,7 +160,7 @@ public class ClaimService {
 
     private ItemPost withStatus(ItemPost post, String status, String now) {
         return new ItemPost(post.id(), post.authorId(), post.type(), post.category(), post.title(),
-            post.publicDescription(), post.school(), post.campus(), post.area(),
-            status, post.createdAt(), now);
+            post.publicDescription(), post.schoolId(), post.schoolName(), post.campusId(), post.campusName(),
+            post.area(), status, post.createdAt(), now);
     }
 }

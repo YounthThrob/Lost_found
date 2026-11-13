@@ -2,6 +2,8 @@ from datetime import datetime, timedelta, timezone
 from uuid import uuid4
 
 from app.abuse.rate_limiter import check as rate_limit_check
+from app.account import service as account_service
+from app.directory import service as directory_service
 from app.listing.store import InMemoryItemImageStore, InMemoryItemPostStore, ItemImage, ItemPost, now_utc
 from app.moderation.service import is_rejected
 from app.shared.errors import (
@@ -27,11 +29,13 @@ ALLOWED_IMAGE_TYPES = {"image/jpeg", "image/png", "image/webp"}
 
 
 def create_draft(author_id: str, *, post_type: str, category: str, title: str,
-                 public_description: str, school: str, campus: str | None,
+                 public_description: str, school_id: str | None, campus_id: str | None,
                  area: str | None) -> ItemPost:
     rate_limit_check(author_id, "post")
     normalized_type = _normalize_type(post_type)
-    _validate(normalized_type, category, title, public_description, school, campus, area)
+    _validate(normalized_type, category, title, public_description, area)
+    resolved_school_id, school_name, resolved_campus_id, campus_name = _resolve_location(
+        author_id, school_id, campus_id)
     now = now_utc()
     post = ItemPost(
         id=str(uuid4()),
@@ -40,8 +44,10 @@ def create_draft(author_id: str, *, post_type: str, category: str, title: str,
         category=category.strip(),
         title=title.strip(),
         public_description=public_description.strip(),
-        school=school.strip(),
-        campus=_normalize(campus),
+        school_id=resolved_school_id,
+        school_name=school_name,
+        campus_id=resolved_campus_id,
+        campus_name=campus_name,
         area=_normalize(area),
         status="DRAFT",
         created_at=now,
@@ -52,13 +58,15 @@ def create_draft(author_id: str, *, post_type: str, category: str, title: str,
 
 
 def update_draft(author_id: str, post_id: str, *, post_type: str, category: str, title: str,
-                 public_description: str, school: str, campus: str | None,
+                 public_description: str, school_id: str | None, campus_id: str | None,
                  area: str | None) -> ItemPost:
     post = _require_owned(author_id, post_id)
     if post.status != "DRAFT":
         raise BusinessError(INVALID_STATE_TRANSITION)
     normalized_type = _normalize_type(post_type)
-    _validate(normalized_type, category, title, public_description, school, campus, area)
+    _validate(normalized_type, category, title, public_description, area)
+    resolved_school_id, school_name, resolved_campus_id, campus_name = _resolve_location(
+        author_id, school_id, campus_id)
     updated = ItemPost(
         id=post.id,
         author_id=post.author_id,
@@ -66,8 +74,10 @@ def update_draft(author_id: str, post_id: str, *, post_type: str, category: str,
         category=category.strip(),
         title=title.strip(),
         public_description=public_description.strip(),
-        school=school.strip(),
-        campus=_normalize(campus),
+        school_id=resolved_school_id,
+        school_name=school_name,
+        campus_id=resolved_campus_id,
+        campus_name=campus_name,
         area=_normalize(area),
         status=post.status,
         created_at=post.created_at,
@@ -126,7 +136,7 @@ def get_detail(viewer_id: str | None, post_id: str) -> ItemPost:
 
 
 def search(keyword: str | None, post_type: str | None, category: str | None,
-           school: str | None, campus: str | None, page: int, page_size: int) -> dict:
+           school_id: str | None, campus_id: str | None, page: int, page_size: int) -> dict:
     if page < 1 or page_size < 1 or page_size > MAX_PAGE_SIZE:
         raise BusinessError(VALIDATION_FAILED)
     kw = keyword.strip().lower() if keyword else None
@@ -134,8 +144,8 @@ def search(keyword: str | None, post_type: str | None, category: str | None,
         p for p in _store.list_visible()
         if _matches(post_type, p.type)
         and _matches(category, p.category)
-        and _matches(school, p.school)
-        and _matches(campus, p.campus)
+        and _matches(school_id, p.school_id)
+        and _matches(campus_id, p.campus_id)
         and (kw is None or kw in p.title.lower() or kw in p.public_description.lower())
     ]
     total = len(posts)
@@ -224,17 +234,41 @@ def _require_owned(author_id: str, post_id: str) -> ItemPost:
 
 
 def _validate(post_type: str | None, category: str, title: str, public_description: str,
-              school: str, campus: str | None, area: str | None) -> None:
+              area: str | None) -> None:
     if post_type not in ("LOST", "FOUND"):
         raise BusinessError(VALIDATION_FAILED)
     _require_text(title, MAX_TITLE)
     _require_text(category, MAX_CATEGORY)
     _require_text(public_description, MAX_DESCRIPTION)
-    _require_text(school, MAX_FIELD)
-    if campus is not None and len(campus.strip()) > MAX_FIELD:
-        raise BusinessError(VALIDATION_FAILED)
     if area is not None and len(area.strip()) > MAX_FIELD:
         raise BusinessError(VALIDATION_FAILED)
+
+
+def _resolve_location(author_id: str, school_id: str | None, campus_id: str | None) -> tuple[str, str, str | None, str | None]:
+    if school_id:
+        school = directory_service.find_school(school_id)
+        if school is None:
+            raise BusinessError(VALIDATION_FAILED)
+        resolved_school_id = school.id
+        school_name = school.name
+    else:
+        user = account_service.current_user(author_id)
+        if user is None or not user.school_id:
+            raise BusinessError(VALIDATION_FAILED)
+        school = directory_service.find_school(user.school_id)
+        if school is None:
+            raise BusinessError(VALIDATION_FAILED)
+        resolved_school_id = school.id
+        school_name = school.name
+    resolved_campus_id = None
+    campus_name = None
+    if campus_id:
+        campus = directory_service.find_active_campus(resolved_school_id, campus_id)
+        if campus is None:
+            raise BusinessError(VALIDATION_FAILED)
+        resolved_campus_id = campus.id
+        campus_name = campus.name
+    return resolved_school_id, school_name, resolved_campus_id, campus_name
 
 
 def _normalize_type(post_type: str | None) -> str | None:
@@ -264,8 +298,10 @@ def _with_status(post: ItemPost, status: str) -> ItemPost:
         category=post.category,
         title=post.title,
         public_description=post.public_description,
-        school=post.school,
-        campus=post.campus,
+        school_id=post.school_id,
+        school_name=post.school_name,
+        campus_id=post.campus_id,
+        campus_name=post.campus_name,
         area=post.area,
         status=status,
         created_at=post.created_at,

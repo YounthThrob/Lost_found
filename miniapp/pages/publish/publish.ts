@@ -1,6 +1,14 @@
 import { request, uploadFile } from "../../utils/request";
 import { mediaUrl } from "../../utils/format";
-import type { ItemImage, ItemPostView } from "../../types/api";
+import type {
+  CampusListData,
+  CampusProfileView,
+  CampusView,
+  ItemImage,
+  ItemPostView,
+  SchoolListData,
+  SchoolView,
+} from "../../types/api";
 
 const CATEGORIES = ["校园卡", "证件", "电子产品", "生活用品", "衣物", "其他"];
 const TYPE_LABEL: Record<string, string> = { LOST: "寻物（我丢了）", FOUND: "招领（我捡到）" };
@@ -25,8 +33,14 @@ Page({
     category: CATEGORIES[0],
     title: "",
     publicDescription: "",
-    school: "",
-    campus: "",
+    schoolId: "",
+    schoolName: "",
+    campusId: "",
+    campusName: "",
+    schoolKeyword: "",
+    schools: [] as SchoolView[],
+    campuses: [] as CampusView[],
+    searching: false,
     area: "",
     images: [] as ImageEntry[],
     maxImages: MAX_IMAGES,
@@ -37,6 +51,8 @@ Page({
     if (options.id) {
       this.setData({ id: options.id, editing: true });
       this.loadPost(options.id);
+    } else {
+      this.prefillSchool();
     }
   },
 
@@ -51,14 +67,96 @@ Page({
         categoryIndex: catIndex,
         title: post.title,
         publicDescription: post.publicDescription,
-        school: post.school,
-        campus: post.campus || "",
+        schoolId: post.schoolId,
+        schoolName: post.schoolName,
+        campusId: post.campusId || "",
+        campusName: post.campusName || "",
         area: post.area || "",
         images: (post.images || []).map((img) => ({ local: false, src: mediaUrl(img.url), id: img.id })),
       });
+      if (post.schoolId) {
+        this.loadCampuses(post.schoolId);
+      }
     } catch (e: any) {
       wx.showToast({ title: e.message, icon: "none" });
     }
+  },
+
+  // ===== 学校/校区：预填本人档案，也可改选 =====
+  async prefillSchool() {
+    try {
+      const p = await request<CampusProfileView>({ url: "/me/campus-profile" });
+      this.setData({
+        schoolId: p.schoolId || "",
+        schoolName: p.schoolName || "",
+        campusId: p.campusId || "",
+        campusName: p.campusName || "",
+      });
+      if (p.schoolId) {
+        this.loadCampuses(p.schoolId);
+      } else {
+        this.searchSchools();
+      }
+    } catch {
+      /* 未登录或未设置：保持空，允许用户在发帖时选择 */
+    }
+  },
+
+  onSearchSchool(e: any) {
+    this.setData({ schoolKeyword: e.detail.value });
+    this.searchSchools();
+  },
+
+  async searchSchools() {
+    const keyword = this.data.schoolKeyword.trim();
+    this.setData({ searching: true });
+    try {
+      const data = await request<SchoolListData>({
+        url: "/directory/schools",
+        data: { page: 1, pageSize: 20, ...(keyword ? { keyword } : {}) },
+      });
+      this.setData({ schools: data.items });
+    } catch (e: any) {
+      wx.showToast({ title: e.message, icon: "none" });
+    } finally {
+      this.setData({ searching: false });
+    }
+  },
+
+  async loadCampuses(schoolId: string) {
+    try {
+      const data = await request<CampusListData>({ url: `/directory/schools/${schoolId}/campuses` });
+      this.setData({ campuses: data.items });
+    } catch (e: any) {
+      wx.showToast({ title: e.message, icon: "none" });
+    }
+  },
+
+  onSelectSchool(e: any) {
+    const { id, name } = e.currentTarget.dataset;
+    this.setData({
+      schoolId: id,
+      schoolName: name,
+      campusId: "",
+      campusName: "",
+      schoolKeyword: "",
+      schools: [],
+      campuses: [],
+    });
+    this.loadCampuses(id);
+  },
+
+  onChangeSchool() {
+    this.setData({ schoolId: "", schoolName: "", campusId: "", campusName: "", campuses: [] });
+  },
+
+  onSelectCampus(e: any) {
+    const { id, name } = e.currentTarget.dataset;
+    this.setData({ campusId: id, campusName: name });
+  },
+
+  onClearCampus() {
+    this.setData({ campusId: "", campusName: "" });
   },
 
   onTypeChange(e: any) {
@@ -124,7 +222,7 @@ Page({
   validate(): string {
     if (!this.data.title.trim()) return "请填写标题";
     if (!this.data.publicDescription.trim()) return "请填写公开描述";
-    if (!this.data.school.trim()) return "请填写学校";
+    if (!this.data.schoolId) return "请选择学校";
     return "";
   },
 
@@ -134,8 +232,8 @@ Page({
       category: this.data.category,
       title: this.data.title.trim(),
       publicDescription: this.data.publicDescription.trim(),
-      school: this.data.school.trim(),
-      campus: this.data.campus.trim() || null,
+      schoolId: this.data.schoolId || null,
+      campusId: this.data.campusId || null,
       area: this.data.area.trim() || null,
     };
   },

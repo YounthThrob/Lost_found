@@ -2,6 +2,8 @@ package com.lostfound.account;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.lostfound.directory.Campus;
+import com.lostfound.directory.DirectoryService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -23,6 +25,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @AutoConfigureMockMvc
 class CampusProfileTest {
 
+    private static final String SCHOOL_ID = "018c0000-0000-7000-8000-000000000001";
+
     @Autowired
     private MockMvc mockMvc;
 
@@ -31,6 +35,9 @@ class CampusProfileTest {
 
     @Autowired
     private InMemoryUserStore userStore;
+
+    @Autowired
+    private DirectoryService directoryService;
 
     @BeforeEach
     void resetStore() {
@@ -50,6 +57,15 @@ class CampusProfileTest {
         return "Bearer " + token;
     }
 
+    /** 通过目录服务按校区名取到确定学校下的校区 id（校区主键为不可预测 UUID）。 */
+    private String activeCampusId(String name) {
+        return directoryService.listCampuses(SCHOOL_ID).stream()
+            .filter(c -> name.equals(c.name()))
+            .map(Campus::id)
+            .findFirst()
+            .orElse(null);
+    }
+
     @Test
     void get_campus_profile_unset_returns_null_and_marker() throws Exception {
         String token = loginToken();
@@ -59,8 +75,8 @@ class CampusProfileTest {
             .andReturn().getResponse().getContentAsString();
 
         JsonNode data = objectMapper.readTree(body).path("data");
-        assertTrue(data.path("school").isNull());
-        assertTrue(data.path("campus").isNull());
+        assertTrue(data.path("schoolId").isNull());
+        assertTrue(data.path("campusId").isNull());
         assertEquals("SELF_DECLARED", data.path("verificationStatus").asText());
     }
 
@@ -68,19 +84,21 @@ class CampusProfileTest {
     void put_then_get_campus_profile_returns_values() throws Exception {
         String token = loginToken();
         String header = bearer(token);
+        String campusId = activeCampusId("东校区");
+        assertTrue(campusId != null && !campusId.isEmpty());
 
         mockMvc.perform(put("/api/v1/me/campus-profile").header("Authorization", header)
                 .contentType(MediaType.APPLICATION_JSON)
-                .content("{\"school\":\"南方大学\",\"campus\":\"东校区\"}"))
+                .content("{\"schoolId\":\"" + SCHOOL_ID + "\",\"campusId\":\"" + campusId + "\"}"))
             .andExpect(status().isOk())
-            .andExpect(jsonPath("$.data.school").value("南方大学"))
-            .andExpect(jsonPath("$.data.campus").value("东校区"))
+            .andExpect(jsonPath("$.data.schoolName").value("南方大学"))
+            .andExpect(jsonPath("$.data.campusName").value("东校区"))
             .andExpect(jsonPath("$.data.verificationStatus").value("SELF_DECLARED"));
 
         mockMvc.perform(get("/api/v1/me/campus-profile").header("Authorization", header))
             .andExpect(status().isOk())
-            .andExpect(jsonPath("$.data.school").value("南方大学"))
-            .andExpect(jsonPath("$.data.campus").value("东校区"));
+            .andExpect(jsonPath("$.data.schoolName").value("南方大学"))
+            .andExpect(jsonPath("$.data.campusName").value("东校区"));
     }
 
     @Test
@@ -89,7 +107,7 @@ class CampusProfileTest {
 
         mockMvc.perform(put("/api/v1/me/campus-profile").header("Authorization", bearer(token))
                 .contentType(MediaType.APPLICATION_JSON)
-                .content("{\"school\":\"\"}"))
+                .content("{\"schoolId\":\"\"}"))
             .andExpect(status().isUnprocessableEntity())
             .andExpect(jsonPath("$.error.code").value("VALIDATION_FAILED"));
     }
@@ -100,7 +118,7 @@ class CampusProfileTest {
 
         mockMvc.perform(put("/api/v1/me/campus-profile").header("Authorization", bearer(token))
                 .contentType(MediaType.APPLICATION_JSON)
-                .content("{\"campus\":\"东校区\"}"))
+                .content("{\"campusId\":\"any-campus-id\"}"))
             .andExpect(status().isUnprocessableEntity())
             .andExpect(jsonPath("$.error.code").value("VALIDATION_FAILED"));
     }
@@ -111,7 +129,7 @@ class CampusProfileTest {
 
         String body = mockMvc.perform(put("/api/v1/me/campus-profile").header("Authorization", bearer(token))
                 .contentType(MediaType.APPLICATION_JSON)
-                .content("{\"school\":\"南方大学\"}"))
+                .content("{\"schoolId\":\"" + SCHOOL_ID + "\"}"))
             .andReturn().getResponse().getContentAsString();
 
         assertFalse(body.contains("certified"));
@@ -127,7 +145,7 @@ class CampusProfileTest {
             .andExpect(status().isOk());
         mockMvc.perform(put("/api/v1/me/campus-profile").header("Authorization", header)
                 .contentType(MediaType.APPLICATION_JSON)
-                .content("{\"school\":\"南方大学\"}"))
+                .content("{\"schoolId\":\"" + SCHOOL_ID + "\"}"))
             .andExpect(status().isOk());
 
         mockMvc.perform(get("/api/v1/me").header("Authorization", header))
@@ -142,13 +160,13 @@ class CampusProfileTest {
 
         mockMvc.perform(put("/api/v1/me/campus-profile").header("Authorization", header)
                 .contentType(MediaType.APPLICATION_JSON)
-                .content("{\"school\":\"南方大学\"}"))
+                .content("{\"schoolId\":\"" + SCHOOL_ID + "\"}"))
             .andExpect(status().isOk());
         mockMvc.perform(post("/api/v1/me/agreement").header("Authorization", header))
             .andExpect(status().isOk());
 
         mockMvc.perform(get("/api/v1/me/campus-profile").header("Authorization", header))
             .andExpect(status().isOk())
-            .andExpect(jsonPath("$.data.school").value("南方大学"));
+            .andExpect(jsonPath("$.data.schoolName").value("南方大学"));
     }
 }

@@ -7,7 +7,7 @@
       </view>
       <view class="thumb-body">
         <view class="item-title">{{item.post.title}}</view>
-        <view class="muted">{{item.post.category}} · {{item.post.school}}</view>
+        <view class="muted">{{item.post.category}} · {{item.post.schoolName}}</view>
         <view class="muted">收藏于 {{item.timeLabel}}</view>
       </view>
       <view class="tag {{item.inactive ? 'tag-gray' : 'tag-green'}}">{{item.inactive ? '已下架/关闭' : item.statusLabel}}</view>

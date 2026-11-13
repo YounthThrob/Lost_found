@@ -36,15 +36,16 @@ public class ListingController {
     }
 
     public record ItemPostView(String id, String type, String category, String title,
-                               String publicDescription, String school, String campus, String area,
+                               String publicDescription, String schoolId, String schoolName,
+                               String campusId, String campusName, String area,
                                String status, String authorId, String createdAt, String updatedAt,
                                List<ItemImageView> images) {
 
         public static ItemPostView from(ItemPost p, List<ItemImage> images) {
             List<ItemImageView> views = images.stream().map(ItemImageView::of).toList();
             return new ItemPostView(p.id(), p.type(), p.category(), p.title(), p.publicDescription(),
-                p.school(), p.campus(), p.area(), p.status(), p.authorId(), p.createdAt(), p.updatedAt(),
-                views);
+                p.schoolId(), p.schoolName(), p.campusId(), p.campusName(), p.area(),
+                p.status(), p.authorId(), p.createdAt(), p.updatedAt(), views);
         }
     }
 
@@ -115,12 +116,12 @@ public class ListingController {
     public Envelope.Response<ItemPostListData> searchPosts(@RequestParam(required = false) String keyword,
                                                            @RequestParam(required = false) String type,
                                                            @RequestParam(required = false) String category,
-                                                           @RequestParam(required = false) String school,
-                                                           @RequestParam(required = false) String campus,
+                                                           @RequestParam(required = false) String schoolId,
+                                                           @RequestParam(required = false) String campusId,
                                                            @RequestParam(defaultValue = "1") int page,
                                                            @RequestParam(defaultValue = "20") int pageSize) {
         ListingService.SearchResult result =
-            listingService.search(keyword, type, category, school, campus, page, pageSize);
+            listingService.search(keyword, type, category, schoolId, campusId, page, pageSize);
         List<ItemPostView> views = result.items().stream().map(this::view).toList();
         ListingService.Pagination p = result.pagination();
         return Envelope.ok(new ItemPostListData(views, p));

@@ -14,8 +14,10 @@ class ItemPost:
     category: str
     title: str
     public_description: str
-    school: str
-    campus: str | None
+    school_id: str
+    school_name: str
+    campus_id: str | None
+    campus_name: str | None
     area: str | None
     status: str
     created_at: str

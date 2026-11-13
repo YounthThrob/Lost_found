@@ -143,7 +143,7 @@ public class HandoverService {
 
     private ItemPost withStatus(ItemPost post, String status) {
         return new ItemPost(post.id(), post.authorId(), post.type(), post.category(), post.title(),
-            post.publicDescription(), post.school(), post.campus(), post.area(),
-            status, post.createdAt(), Instant.now().toString());
+            post.publicDescription(), post.schoolId(), post.schoolName(), post.campusId(), post.campusName(),
+            post.area(), status, post.createdAt(), Instant.now().toString());
     }
 }
