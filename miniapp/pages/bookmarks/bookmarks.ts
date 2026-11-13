@@ -1,12 +1,14 @@
 import { request } from "../../utils/request";
 import { postStatus } from "../../utils/status";
-import { formatTime } from "../../utils/format";
+import { formatTime, mediaUrl } from "../../utils/format";
 import type { BookmarkListData, BookmarkView } from "../../types/api";
 
 interface BookmarkItem extends BookmarkView {
   statusLabel: string;
   timeLabel: string;
   inactive: boolean;
+  cover: string;
+  glyph: string;
 }
 
 Page({
@@ -27,6 +29,8 @@ Page({
           statusLabel: postStatus(b.post.status),
           timeLabel: formatTime(b.createdAt),
           inactive: b.post.status === "REMOVED" || b.post.status === "CLOSED",
+          cover: mediaUrl((b.post.images || [])[0]?.url),
+          glyph: (b.post.category || "物").slice(0, 1),
         })),
       });
     } catch (e: any) {

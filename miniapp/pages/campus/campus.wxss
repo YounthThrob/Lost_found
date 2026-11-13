@@ -1,5 +1,6 @@
-.form-label {
-  font-size: 26rpx;
-  color: #5a6172;
-  margin-bottom: 12rpx;
+.status-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8rpx 0;
 }

@@ -1,7 +1,22 @@
 <view class="container">
-  <view wx:if="{{restricted}}" class="card" style="background: #fdecec;">
-    <view class="card-title" style="color: #fa5151;">账户已受限</view>
+  <view wx:if="{{restricted}}" class="card" style="background: #f5e2dd; border-color: #e2c5bd;">
+    <view class="card-title" style="color: #b4473a;">账户已受限</view>
     <view class="muted">部分操作已被限制，如有疑问可通过反馈渠道申诉。</view>
+  </view>
+
+  <!-- 个人身份 -->
+  <view class="card profile-card" bindtap="goCampus">
+    <view class="profile-row">
+      <view class="avatar">{{school ? school.slice(0, 1) : '迹'}}</view>
+      <view class="profile-info">
+        <view class="profile-school">{{school || '未设置学校'}}</view>
+        <view class="profile-meta">
+          <text class="tag {{verified ? 'tag-green' : 'tag-gray'}}">{{verified ? '已核验校园邮箱' : '未核验'}}</text>
+          <text class="faint">学校为用户自报，未经校方认证</text>
+        </view>
+      </view>
+      <text class="arrow">›</text>
+    </view>
   </view>
 
   <view class="card">

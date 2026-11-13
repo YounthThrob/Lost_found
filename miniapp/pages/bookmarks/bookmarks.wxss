@@ -1,27 +1,35 @@
+.thumb-wrap {
+  width: 116rpx;
+  height: 116rpx;
+  flex-shrink: 0;
+}
+
+.thumb {
+  width: 116rpx;
+  height: 116rpx;
+  border-radius: 12rpx;
+  background: var(--paper-2);
+}
+
+.thumb-empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 44rpx;
+  color: var(--line-strong);
+  border: 1rpx solid var(--line);
+}
+
+.thumb-body {
+  flex: 1;
+  min-width: 0;
+}
+
 .item-title {
-  font-size: 32rpx;
+  font-size: 30rpx;
   font-weight: 600;
-}
-
-.mini-btn {
-  font-size: 24rpx;
-  padding: 0 20rpx;
-  height: 56rpx;
-  line-height: 56rpx;
-  border-radius: 8rpx;
-  margin: 0;
-}
-
-.mini-btn::after {
-  border: none;
-}
-
-.mini-info {
-  background: #eef3fb;
-  color: #3a66b8;
-}
-
-.mini-no {
-  background: #fdecec;
-  color: #fa5151;
+  margin-bottom: 4rpx;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }

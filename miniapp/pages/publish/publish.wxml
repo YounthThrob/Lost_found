@@ -10,6 +10,19 @@
       <view class="picker">{{category}}</view>
     </picker>
 
+    <view class="form-label">图片（可选，最多 {{maxImages}} 张）</view>
+    <view class="img-grid">
+      <view wx:for="{{images}}" wx:key="src" class="img-cell">
+        <image class="img-thumb" src="{{item.src}}" mode="aspectFill" data-idx="{{index}}" bindtap="previewImage" />
+        <view class="img-remove" data-idx="{{index}}" catchtap="removeImage">×</view>
+      </view>
+      <view wx:if="{{images.length < maxImages}}" class="img-cell img-add" bindtap="chooseImages">
+        <view class="img-add-plus">＋</view>
+        <view class="img-add-label">添加</view>
+      </view>
+    </view>
+    <view class="muted" style="margin-bottom: 20rpx;">支持 jpeg / png / webp，单张 ≤ 10MB</view>
+
     <view class="form-label">标题</view>
     <input class="input" placeholder="例如：遗失校园卡" value="{{title}}" data-field="title" bindinput="onInput" />
 

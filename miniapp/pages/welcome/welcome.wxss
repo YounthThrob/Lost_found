@@ -4,17 +4,19 @@
 }
 
 .hero-title {
-  font-size: 44rpx;
+  font-size: 52rpx;
   font-weight: 700;
+  letter-spacing: 10rpx;
 }
 
 .hero-sub {
-  color: #8a919f;
+  color: var(--ink-soft);
   font-size: 26rpx;
   margin-top: 8rpx;
+  letter-spacing: 2rpx;
 }
 
 .strong {
-  color: #e6830c;
+  color: var(--amber-deep);
   font-weight: 600;
 }

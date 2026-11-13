@@ -1,4 +1,5 @@
 {
-  "navigationBarTitleText": "失物招领（非官方）",
-  "enablePullDownRefresh": true
+  "navigationBarTitleText": "寻迹",
+  "enablePullDownRefresh": true,
+  "backgroundTextStyle": "dark"
 }

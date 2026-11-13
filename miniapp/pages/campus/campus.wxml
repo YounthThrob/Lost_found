@@ -1,5 +1,52 @@
 <view class="container">
+  <!-- 校园身份状态 -->
   <view class="card">
+    <view class="section-head">
+      <text class="section-index">01</text>
+      <text class="section-label">校园身份</text>
+      <view class="section-rule"></view>
+    </view>
+    <view class="status-row">
+      <text class="muted">核验状态</text>
+      <text class="tag {{verificationStatus === 'EMAIL_VERIFIED' ? 'tag-green' : 'tag-gray'}}">
+        {{verificationStatus === 'EMAIL_VERIFIED' ? '已核验校园邮箱' : '未核验'}}
+      </text>
+    </view>
+    <block wx:if="{{verificationStatus === 'EMAIL_VERIFIED'}}">
+      <view class="divider"></view>
+      <view class="meta-row"><text class="meta-label">已核验邮箱</text>{{verifiedEmail}}</view>
+      <view class="meta-row"><text class="meta-label">核验时间</text>{{emailVerifiedAt}}</view>
+    </block>
+    <view class="disclaimer">校园邮箱核验仅代表邮箱属于某校园域名，不代表校方认证或身份可信。</view>
+  </view>
+
+  <!-- 邮箱核验 -->
+  <view class="card">
+    <view class="section-head">
+      <text class="section-index">02</text>
+      <text class="section-label">校园邮箱核验</text>
+      <view class="section-rule"></view>
+    </view>
+    <view class="muted" style="margin-bottom: 20rpx;">使用校园邮箱（如 @xx.edu.cn）核验身份，核验后可覆盖为新的校园邮箱。</view>
+    <view class="form-label">校园邮箱</view>
+    <input class="input" placeholder="如：student@xx.edu.cn" value="{{email}}" data-field="email" bindinput="onInput" />
+    <button class="btn btn-ghost btn-block" bindtap="onSendCode" loading="{{verifying}}" disabled="{{verifying}}">
+      {{codeSent ? '重新发送验证码' : '发送验证码'}}
+    </button>
+    <block wx:if="{{codeSent}}">
+      <view class="form-label" style="margin-top: 20rpx;">验证码</view>
+      <input class="input" placeholder="输入邮箱收到的验证码" value="{{code}}" data-field="code" bindinput="onInput" />
+      <button class="btn btn-block" bindtap="onConfirmCode" loading="{{verifying}}" disabled="{{verifying}}">确认核验</button>
+    </block>
+  </view>
+
+  <!-- 自报学校 -->
+  <view class="card">
+    <view class="section-head">
+      <text class="section-index">03</text>
+      <text class="section-label">自报学校</text>
+      <view class="section-rule"></view>
+    </view>
     <view class="form-label">学校</view>
     <input class="input" placeholder="请输入学校名称" value="{{school}}" data-field="school" bindinput="onInput" />
     <view class="form-label">校区（可选）</view>

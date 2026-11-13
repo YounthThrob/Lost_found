@@ -1,20 +1,30 @@
 import { request } from "../../utils/request";
 import { postStatus } from "../../utils/status";
-import { formatTime } from "../../utils/format";
+import { formatTime, mediaUrl } from "../../utils/format";
 import type { ItemPostListData, ItemPostView } from "../../types/api";
 
 interface IndexItem extends ItemPostView {
   statusLabel: string;
   timeLabel: string;
+  typeLabel: string;
+  cover: string;
+  imageCount: number;
+  glyph: string;
 }
 
 const CATEGORIES = ["全部", "校园卡", "证件", "电子产品", "生活用品", "衣物", "其他"];
+const TYPE_TABS = [
+  { key: "", label: "全部" },
+  { key: "LOST", label: "寻物" },
+  { key: "FOUND", label: "招领" },
+];
 
 Page({
   data: {
     keyword: "",
-    activeType: "FOUND" as string,
+    activeType: "",
     activeCategory: "全部",
+    typeTabs: TYPE_TABS,
     categories: CATEGORIES,
     items: [] as IndexItem[],
     page: 1,
@@ -43,6 +53,19 @@ Page({
     await this.load(1);
   },
 
+  decorate(it: ItemPostView): IndexItem {
+    const images = it.images || [];
+    return {
+      ...it,
+      statusLabel: postStatus(it.status),
+      timeLabel: formatTime(it.createdAt),
+      typeLabel: it.type === "FOUND" ? "招领" : "寻物",
+      cover: mediaUrl(images[0]?.url),
+      imageCount: images.length,
+      glyph: (it.category || "物").slice(0, 1),
+    };
+  },
+
   async load(page: number) {
     this.setData({ loading: true });
     try {
@@ -56,11 +79,7 @@ Page({
           pageSize: this.data.pageSize,
         },
       });
-      const items = data.items.map((it) => ({
-        ...it,
-        statusLabel: postStatus(it.status),
-        timeLabel: formatTime(it.createdAt),
-      }));
+      const items = data.items.map((it) => this.decorate(it));
       const merged = page === 1 ? items : this.data.items.concat(items);
       this.setData({
         items: merged,
@@ -94,6 +113,7 @@ Page({
 
   switchCategory(e: any) {
     const c = e.currentTarget.dataset.cat;
+    if (c === this.data.activeCategory) return;
     this.setData({ activeCategory: c });
     this.reload();
   },

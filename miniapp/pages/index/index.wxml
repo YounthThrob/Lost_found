@@ -1,15 +1,35 @@
-<view class="container">
+<view class="page">
+  <!-- 页首：寻迹图谱 -->
+  <view class="hero">
+    <view class="hero-top">
+      <view class="hero-title">寻迹</view>
+      <view class="hero-coord">校园互助 · 失物招领</view>
+    </view>
+    <view class="hero-sub">本平台为<text class="hero-mark">非官方</text>互助工具，学校信息由用户自报</view>
+    <view class="hero-scale"></view>
+  </view>
+
+  <!-- 搜索 -->
   <view class="search-row">
-    <input class="search-input" placeholder="搜索标题或描述" value="{{keyword}}" bindinput="onKeyword" confirm-type="search" bindconfirm="onSearch" />
-    <button class="search-btn" bindtap="onSearch">搜索</button>
+    <view class="search-input-wrap">
+      <text class="search-glyph">⌕</text>
+      <input class="search-input" placeholder="搜索物品、地点或描述" value="{{keyword}}" bindinput="onKeyword" confirm-type="search" bindconfirm="onSearch" />
+    </view>
   </view>
 
+  <!-- 类型：全部 / 寻物 / 招领 -->
   <view class="type-tabs">
-    <view class="type-tab {{activeType === 'FOUND' ? 'active' : ''}}" data-type="FOUND" bindtap="switchType">招领</view>
-    <view class="type-tab {{activeType === 'LOST' ? 'active' : ''}}" data-type="LOST" bindtap="switchType">寻物</view>
+    <view
+      wx:for="{{typeTabs}}"
+      wx:key="key"
+      class="type-tab {{activeType === item.key ? 'active' : ''}} {{item.key === 'LOST' ? 'is-lost' : item.key === 'FOUND' ? 'is-found' : 'is-all'}}"
+      data-type="{{item.key}}"
+      bindtap="switchType"
+    >{{item.label}}</view>
   </view>
 
-  <scroll-view scroll-x class="cat-scroll">
+  <!-- 分类 -->
+  <scroll-view scroll-x class="cat-scroll" enhanced show-scrollbar="{{false}}">
     <view
       wx:for="{{categories}}"
       wx:key="*this"
@@ -19,17 +39,26 @@
     >{{item}}</view>
   </scroll-view>
 
+  <!-- 信息列表 -->
   <view class="list">
-    <view wx:for="{{items}}" wx:key="id" class="card" data-id="{{item.id}}" bindtap="goDetail">
-      <view class="row-between">
-        <view class="tag {{item.type === 'FOUND' ? 'tag-green' : 'tag-orange'}}">{{item.type === 'FOUND' ? '招领' : '寻物'}}</view>
-        <view class="muted">{{item.statusLabel}}</view>
+    <view wx:for="{{items}}" wx:key="id" class="post-card" data-id="{{item.id}}" bindtap="goDetail">
+      <view class="post-media">
+        <image wx:if="{{item.cover}}" class="post-thumb" src="{{item.cover}}" mode="aspectFill" />
+        <view wx:else class="post-thumb post-thumb-empty">
+          <text class="post-glyph">{{item.glyph}}</text>
+        </view>
+        <view class="post-badge {{item.type === 'FOUND' ? 'is-found' : 'is-lost'}}">{{item.typeLabel}}</view>
+        <view wx:if="{{item.imageCount > 1}}" class="post-count">{{item.imageCount}}</view>
       </view>
-      <view class="item-title">{{item.title}}</view>
-      <view class="item-desc">{{item.publicDescription}}</view>
-      <view class="row-between" style="margin-top: 12rpx;">
-        <view class="muted">{{item.category}} · {{item.school}}</view>
-        <view class="muted">{{item.timeLabel}}</view>
+      <view class="post-body">
+        <view class="post-title">{{item.title}}</view>
+        <view class="post-desc">{{item.publicDescription}}</view>
+        <view class="post-meta">
+          <text class="post-meta-item">{{item.category}}</text>
+          <text class="post-dot">·</text>
+          <text class="post-meta-item post-school">{{item.school}}</text>
+          <text class="post-time">{{item.timeLabel}}</text>
+        </view>
       </view>
     </view>
   </view>
@@ -37,5 +66,5 @@
   <view wx:if="{{!loading && items.length === 0}}" class="empty">暂无相关信息</view>
   <view wx:if="{{loading}}" class="empty">加载中…</view>
 
-  <view class="fab" bindtap="goPublish">+</view>
+  <view class="fab" bindtap="goPublish">＋</view>
 </view>

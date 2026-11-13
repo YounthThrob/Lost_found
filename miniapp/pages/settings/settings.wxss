@@ -1,10 +1,1 @@
-.menu-item {
-  padding: 24rpx 0;
-  border-bottom: 1rpx solid #f0f1f3;
-  font-size: 28rpx;
-  color: #3a66b8;
-}
-
-.menu-item:last-child {
-  border-bottom: none;
-}
+/* 复用全局样式（menu-item 见 app.wxss） */

@@ -1,17 +1,39 @@
-.menu-item {
+.profile-row {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  padding: 28rpx 8rpx;
-  border-bottom: 1rpx solid #f0f1f3;
-  font-size: 30rpx;
+  gap: 20rpx;
 }
 
-.menu-item:last-child {
-  border-bottom: none;
+.avatar {
+  width: 96rpx;
+  height: 96rpx;
+  border-radius: 50%;
+  background: var(--pine);
+  color: #fff;
+  font-size: 44rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
 }
 
-.arrow {
-  color: #c4c9d1;
-  font-size: 36rpx;
+.profile-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.profile-school {
+  font-size: 34rpx;
+  font-weight: 600;
+  letter-spacing: 1rpx;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.profile-meta {
+  display: flex;
+  align-items: center;
+  gap: 12rpx;
+  margin-top: 8rpx;
 }

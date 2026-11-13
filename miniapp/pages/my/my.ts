@@ -1,5 +1,5 @@
 import { request } from "../../utils/request";
-import type { MeView } from "../../types/api";
+import type { CampusProfileView, MeView } from "../../types/api";
 
 const MENU = [
   { label: "我的发布", url: "/pages/my-posts/my-posts" },
@@ -15,15 +15,29 @@ Page({
   data: {
     menu: MENU,
     restricted: false,
+    school: "",
+    verified: false,
   },
 
   onShow() {
     request<MeView>({ url: "/me" })
       .then((me) => this.setData({ restricted: me.status === "RESTRICTED" }))
       .catch(() => {});
+    request<CampusProfileView>({ url: "/me/campus-profile" })
+      .then((p) =>
+        this.setData({
+          school: p.school || "",
+          verified: p.verificationStatus === "EMAIL_VERIFIED",
+        })
+      )
+      .catch(() => {});
   },
 
   nav(e: any) {
     wx.navigateTo({ url: e.currentTarget.dataset.url });
+  },
+
+  goCampus() {
+    wx.navigateTo({ url: "/pages/campus/campus" });
   },
 });

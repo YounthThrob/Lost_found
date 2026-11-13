@@ -1,17 +1,1 @@
-.mini-btn {
-  font-size: 24rpx;
-  padding: 0 20rpx;
-  height: 56rpx;
-  line-height: 56rpx;
-  border-radius: 8rpx;
-  margin: 0;
-}
-
-.mini-btn::after {
-  border: none;
-}
-
-.mini-no {
-  background: #fdecec;
-  color: #fa5151;
-}
+/* 复用全局样式（mini-btn 见 app.wxss） */

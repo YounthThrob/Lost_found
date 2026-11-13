@@ -18,16 +18,16 @@
     "pages/settings/settings"
   ],
   "window": {
-    "backgroundTextStyle": "light",
-    "navigationBarBackgroundColor": "#ffffff",
-    "navigationBarTitleText": "失物招领（非官方）",
+    "backgroundTextStyle": "dark",
+    "navigationBarBackgroundColor": "#f3f0e7",
+    "navigationBarTitleText": "寻迹 · 失物招领",
     "navigationBarTextStyle": "black"
   },
   "tabBar": {
-    "color": "#999999",
-    "selectedColor": "#1aad19",
-    "backgroundColor": "#ffffff",
-    "borderStyle": "black",
+    "color": "#a29b88",
+    "selectedColor": "#1e4d3b",
+    "backgroundColor": "#fcfaf4",
+    "borderStyle": "white",
     "list": [
       {
         "pagePath": "pages/index/index",

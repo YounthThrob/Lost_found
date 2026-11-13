@@ -1,3 +1,5 @@
+import { MEDIA_BASE } from "../config";
+
 // 时间与展示格式化工具。后端时间为 UTC RFC3339，这里按本地时区展示。
 
 export function formatTime(iso?: string | null): string {
@@ -15,4 +17,11 @@ export function formatDate(iso?: string | null): string {
 export function shortId(id?: string): string {
   if (!id) return "";
   return id.length > 8 ? id.slice(0, 8) : id;
+}
+
+// 图片相对路径（/media/{key}）解析为可加载的绝对地址。
+export function mediaUrl(url?: string | null): string {
+  if (!url) return "";
+  if (/^https?:\/\//.test(url)) return url;
+  return MEDIA_BASE + url;
 }

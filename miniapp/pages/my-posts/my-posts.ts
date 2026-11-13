@@ -1,11 +1,13 @@
 import { request } from "../../utils/request";
 import { postStatus } from "../../utils/status";
-import { formatTime } from "../../utils/format";
+import { formatTime, mediaUrl } from "../../utils/format";
 import type { ItemPostListData, ItemPostView } from "../../types/api";
 
 interface PostItem extends ItemPostView {
   statusLabel: string;
   timeLabel: string;
+  cover: string;
+  glyph: string;
 }
 
 Page({
@@ -21,7 +23,13 @@ Page({
     try {
       const data = await request<ItemPostListData>({ url: "/me/posts" });
       this.setData({
-        items: data.items.map((p) => ({ ...p, statusLabel: postStatus(p.status), timeLabel: formatTime(p.createdAt) })),
+        items: data.items.map((p) => ({
+          ...p,
+          statusLabel: postStatus(p.status),
+          timeLabel: formatTime(p.createdAt),
+          cover: mediaUrl((p.images || [])[0]?.url),
+          glyph: (p.category || "物").slice(0, 1),
+        })),
       });
     } catch (e: any) {
       wx.showToast({ title: e.message, icon: "none" });

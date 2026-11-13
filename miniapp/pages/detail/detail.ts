@@ -1,7 +1,7 @@
 import { request } from "../../utils/request";
 import { fetchMe, getUserId } from "../../utils/me";
 import { clueStatus, postStatus } from "../../utils/status";
-import { formatTime } from "../../utils/format";
+import { formatTime, mediaUrl } from "../../utils/format";
 import type { ClueListData, ClueView, ItemPostView } from "../../types/api";
 
 const REPORT_REASONS = ["虚假信息", "泄露隐私", "骚扰广告", "违规内容", "其他"];
@@ -14,6 +14,7 @@ Page({
   data: {
     id: "",
     post: null as ItemPostView | null,
+    gallery: [] as string[],
     statusLabel: "",
     timeLabel: "",
     isOwner: false,
@@ -50,6 +51,7 @@ Page({
       }
       this.setData({
         post,
+        gallery: (post.images || []).map((img) => mediaUrl(img.url)).filter(Boolean),
         statusLabel: postStatus(post.status),
         timeLabel: formatTime(post.createdAt),
         isOwner: uid === post.authorId,

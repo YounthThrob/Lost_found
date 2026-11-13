@@ -2,6 +2,14 @@
 
 export type PostType = "LOST" | "FOUND";
 
+export type VerificationStatus = "SELF_DECLARED" | "EMAIL_VERIFIED";
+
+export interface ItemImage {
+  id: string;
+  url: string;
+  sortOrder: number;
+}
+
 export type PostStatus =
   | "DRAFT"
   | "PENDING_REVIEW"
@@ -45,6 +53,7 @@ export interface ItemPostView {
   area?: string | null;
   status: PostStatus;
   authorId: string;
+  images: ItemImage[];
   createdAt: string;
   updatedAt: string;
 }
@@ -63,7 +72,13 @@ export interface MeView {
 export interface CampusProfileView {
   school: string | null;
   campus: string | null;
-  verificationStatus: string;
+  verificationStatus: VerificationStatus;
+  verifiedEmail: string | null;
+  emailVerifiedAt: string | null;
+}
+
+export interface EmailVerificationSendResponse {
+  expiresInSeconds: number;
 }
 
 export interface ClaimView {

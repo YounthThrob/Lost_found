@@ -2,7 +2,7 @@
   display: flex;
   flex-direction: column;
   height: 100vh;
-  background: #f5f6f7;
+  background: var(--paper);
 }
 
 .chat-list {
@@ -28,13 +28,14 @@
 }
 
 .bubble-mine {
-  background: #1aad19;
-  color: #ffffff;
+  background: var(--pine);
+  color: #fff;
 }
 
 .bubble-other {
-  background: #ffffff;
-  color: #1f2329;
+  background: var(--card);
+  border: 1rpx solid var(--line);
+  color: var(--ink);
 }
 
 .bubble-type {
@@ -54,21 +55,22 @@
   display: flex;
   gap: 12rpx;
   padding: 12rpx 24rpx;
-  background: #ffffff;
+  background: var(--card);
   flex-wrap: wrap;
+  border-top: 1rpx solid var(--line);
 }
 
 .chip {
   padding: 8rpx 20rpx;
   border-radius: 30rpx;
-  background: #eef3fb;
-  color: #3a66b8;
+  background: var(--slate-tint);
+  color: var(--slate);
   font-size: 24rpx;
 }
 
 .chip-danger {
-  background: #fdecec;
-  color: #fa5151;
+  background: var(--danger-tint);
+  color: var(--danger);
 }
 
 .input-bar {
@@ -76,26 +78,31 @@
   gap: 16rpx;
   align-items: center;
   padding: 16rpx 24rpx;
-  background: #ffffff;
+  padding-bottom: calc(16rpx + env(safe-area-inset-bottom));
+  background: var(--card);
+  border-top: 1rpx solid var(--line);
 }
 
 .chat-input {
   flex: 1;
-  background: #f5f6f7;
-  border-radius: 12rpx;
+  background: var(--paper);
+  border: 1rpx solid var(--line);
+  border-radius: 14rpx;
   padding: 16rpx 20rpx;
   font-size: 28rpx;
+  color: var(--ink);
 }
 
 .send-btn {
-  background: #1aad19;
-  color: #ffffff;
-  border-radius: 12rpx;
+  background: var(--pine);
+  color: #fff;
+  border-radius: 14rpx;
   font-size: 28rpx;
   padding: 0 28rpx;
   height: 72rpx;
   line-height: 72rpx;
   margin: 0;
+  letter-spacing: 2rpx;
 }
 
 .send-btn::after {

@@ -1,8 +1,16 @@
-import { request } from "../../utils/request";
-import type { ItemPostView } from "../../types/api";
+import { request, uploadFile } from "../../utils/request";
+import { mediaUrl } from "../../utils/format";
+import type { ItemImage, ItemPostView } from "../../types/api";
 
 const CATEGORIES = ["校园卡", "证件", "电子产品", "生活用品", "衣物", "其他"];
 const TYPE_LABEL: Record<string, string> = { LOST: "寻物（我丢了）", FOUND: "招领（我捡到）" };
+const MAX_IMAGES = 9;
+
+interface ImageEntry {
+  local: boolean; // true = 尚未上传的本地临时文件
+  src: string; // 展示用地址（本地临时路径或绝对 media 地址）
+  id?: string; // 服务端图片 id（已上传时存在）
+}
 
 Page({
   data: {
@@ -20,6 +28,8 @@ Page({
     school: "",
     campus: "",
     area: "",
+    images: [] as ImageEntry[],
+    maxImages: MAX_IMAGES,
     saving: false,
   },
 
@@ -44,6 +54,7 @@ Page({
         school: post.school,
         campus: post.campus || "",
         area: post.area || "",
+        images: (post.images || []).map((img) => ({ local: false, src: mediaUrl(img.url), id: img.id })),
       });
     } catch (e: any) {
       wx.showToast({ title: e.message, icon: "none" });
@@ -65,6 +76,51 @@ Page({
     this.setData({ [field]: e.detail.value } as any);
   },
 
+  // ===== 图片 =====
+  chooseImages() {
+    const remaining = MAX_IMAGES - this.data.images.length;
+    if (remaining <= 0) {
+      wx.showToast({ title: `最多上传 ${MAX_IMAGES} 张图片`, icon: "none" });
+      return;
+    }
+    wx.chooseMedia({
+      count: remaining,
+      mediaType: ["image"],
+      sizeType: ["compressed"],
+      sourceType: ["album", "camera"],
+      success: (res) => {
+        const added = res.tempFiles.map((f) => ({ local: true, src: f.tempFilePath }) as ImageEntry);
+        this.setData({ images: this.data.images.concat(added) });
+      },
+    });
+  },
+
+  async removeImage(e: any) {
+    const idx = Number(e.currentTarget.dataset.idx);
+    const img = this.data.images[idx];
+    if (!img) return;
+    const images = this.data.images.slice();
+    if (img.local) {
+      images.splice(idx, 1);
+      this.setData({ images });
+      return;
+    }
+    // 删除已上传到草稿的服务端图片
+    try {
+      await request<Record<string, never>>({ url: `/posts/${this.data.id}/images/${img.id}`, method: "DELETE" });
+      images.splice(idx, 1);
+      this.setData({ images });
+    } catch (err: any) {
+      wx.showToast({ title: err.message, icon: "none" });
+    }
+  },
+
+  previewImage(e: any) {
+    const idx = Number(e.currentTarget.dataset.idx);
+    const urls = this.data.images.map((i) => i.src);
+    wx.previewImage({ current: urls[idx], urls });
+  },
+
   validate(): string {
     if (!this.data.title.trim()) return "请填写标题";
     if (!this.data.publicDescription.trim()) return "请填写公开描述";
@@ -84,7 +140,8 @@ Page({
     };
   },
 
-  async saveDraft(): Promise<string> {
+  // 创建或更新信息，返回信息 id。
+  async persist(): Promise<string> {
     if (this.data.editing) {
       await request<ItemPostView>({
         url: "/posts/" + this.data.id,
@@ -97,6 +154,17 @@ Page({
     return post.id;
   },
 
+  // 把本地临时图片逐一上传到草稿；已成功的就地标记为 remote，避免重试时重复上传。
+  async uploadLocalImages(postId: string): Promise<void> {
+    const images = this.data.images.slice();
+    for (let i = 0; i < images.length; i++) {
+      if (!images[i].local) continue;
+      const uploaded = await uploadFile<ItemImage>(`/posts/${postId}/images`, images[i].src);
+      images[i] = { local: false, src: mediaUrl(uploaded.url), id: uploaded.id };
+      this.setData({ images });
+    }
+  },
+
   async onSaveDraft() {
     const msg = this.validate();
     if (msg) {
@@ -105,7 +173,8 @@ Page({
     }
     this.setData({ saving: true });
     try {
-      await this.saveDraft();
+      const id = await this.persist();
+      await this.uploadLocalImages(id);
       wx.showToast({ title: "已保存草稿", icon: "success" });
       setTimeout(() => wx.navigateBack(), 800);
     } catch (e: any) {
@@ -123,7 +192,8 @@ Page({
     }
     this.setData({ saving: true });
     try {
-      const id = await this.saveDraft();
+      const id = await this.persist();
+      await this.uploadLocalImages(id);
       await request<ItemPostView>({ url: `/posts/${id}/publish`, method: "POST" });
       wx.showToast({ title: "发布成功", icon: "success" });
       setTimeout(() => wx.navigateBack(), 800);
