@@ -1,3 +1,4 @@
+import { MEDIA_BASE } from "../../config";
 import { request } from "../../utils/request";
 import { isLoggedIn } from "../../utils/auth";
 import type { BookmarkListData, CampusProfileView, ClaimListData, ItemPostListData, MeView } from "../../types/api";
@@ -19,6 +20,8 @@ Page({
     archiveMenu: ARCHIVE_MENU,
     restricted: false,
     school: "",
+    nickname: "",
+    avatarUrl: "",
     verified: false,
     postCount: "00",
     claimCount: "00",
@@ -45,7 +48,11 @@ Page({
       return;
     }
     request<MeView>({ url: "/me" })
-      .then((me) => this.setData({ restricted: me.status === "RESTRICTED" }))
+      .then((me) => this.setData({
+        restricted: me.status === "RESTRICTED",
+        nickname: me.nickname || "",
+        avatarUrl: me.avatarUrl ? MEDIA_BASE + me.avatarUrl : "",
+      }))
       .catch(() => {});
     request<CampusProfileView>({ url: "/me/campus-profile" })
       .then((p) => this.setData({ school: p.school || "", verified: p.verificationStatus === "EMAIL_VERIFIED" }))
@@ -68,6 +75,7 @@ Page({
 
   nav(e: any) { wx.navigateTo({ url: e.currentTarget.dataset.url }); },
   goCampus() { wx.navigateTo({ url: "/pages/campus/campus" }); },
+  goProfile() { wx.navigateTo({ url: "/pages/profile/profile" }); },
   goHome() {
     wx.showTabBar({ animation: false });
     wx.switchTab({ url: "/pages/index/index" });

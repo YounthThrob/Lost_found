@@ -73,6 +73,13 @@ export interface MeView {
   id: string;
   status: string;
   agreementAccepted: boolean;
+  nickname: string | null;
+  avatarUrl: string | null;
+}
+
+export interface ProfileView {
+  nickname: string | null;
+  avatarUrl: string | null;
 }
 
 export interface CampusProfileView {

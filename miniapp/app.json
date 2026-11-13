@@ -2,6 +2,7 @@
   "pages": [
     "pages/index/index",
     "pages/my/my",
+    "pages/profile/profile",
     "pages/welcome/welcome",
     "pages/agreement/agreement",
     "pages/publish/publish",
