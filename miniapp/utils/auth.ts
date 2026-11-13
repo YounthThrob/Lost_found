@@ -25,6 +25,26 @@ export function isLoggedIn(): boolean {
   return !!getToken();
 }
 
+// 写操作前的登录门：已登录返回 true；未登录弹窗提示并跳转登录页，返回 false。
+export function ensureLoggedIn(): Promise<boolean> {
+  if (isLoggedIn()) return Promise.resolve(true);
+  return new Promise<boolean>((resolve) => {
+    wx.showModal({
+      title: "需要登录",
+      content: "登录后才能使用该功能",
+      confirmText: "去登录",
+      cancelText: "取消",
+      success: (res) => {
+        if (res.confirm) {
+          wx.navigateTo({ url: "/pages/welcome/welcome" });
+        }
+        resolve(false);
+      },
+      fail: () => resolve(false),
+    });
+  });
+}
+
 export async function login(): Promise<LoginResult> {
   const code = await wxLoginCode();
   const data = await request<LoginResult>({

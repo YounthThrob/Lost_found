@@ -24,8 +24,19 @@
     </view>
   </view>
 
-  <button class="btn btn-block" bindtap="onAgree" loading="{{loading}}" disabled="{{loading}}">
-    已阅读并同意，进入平台
+  <view class="agree-row" bindtap="toggleAgree">
+    <view class="checkbox {{agreed ? 'checked' : ''}}">
+      <text wx:if="{{agreed}}" class="checkmark">✓</text>
+    </view>
+    <view class="agree-text">
+      我已阅读并同意
+      <text class="link" catchtap="openAgreement" data-type="user">《用户协议》</text>
+      与
+      <text class="link" catchtap="openAgreement" data-type="privacy">《隐私说明》</text>
+    </view>
+  </view>
+
+  <button class="btn btn-block" bindtap="onAgree" loading="{{loading}}" disabled="{{loading || !agreed}}">
+    进入平台
   </button>
-  <view class="disclaimer">点击即表示同意《用户协议》与《隐私说明》</view>
 </view>

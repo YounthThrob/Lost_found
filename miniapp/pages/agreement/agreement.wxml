@@ -1,0 +1,6 @@
+<view class="container">
+  <view class="card">
+    <view class="title">{{title}}</view>
+    <text class="body" user-select>{{body}}</text>
+  </view>
+</view>

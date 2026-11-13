@@ -39,10 +39,10 @@ export function request<T>(options: RequestOptions): Promise<T> {
           return;
         }
         const err = toError(status, body);
-        // 会话失效：清 token 并回到首次进入页重新登录。
+        // 会话失效：清 token，交由调用方（写操作入口）决定是否提示登录；不再自动跳转，
+        // 以免匿名浏览时访问 /me 等受保护接口被强制拉回登录页。
         if (status === 401 || err.code === "SESSION_EXPIRED") {
           clearToken();
-          wx.reLaunch({ url: "/pages/welcome/welcome" });
         }
         reject(err);
       },
@@ -76,7 +76,6 @@ export function uploadFile<T>(url: string, filePath: string): Promise<T> {
         const err = toError(res.statusCode, body);
         if (res.statusCode === 401 || err.code === "SESSION_EXPIRED") {
           clearToken();
-          wx.reLaunch({ url: "/pages/welcome/welcome" });
         }
         reject(err);
       },

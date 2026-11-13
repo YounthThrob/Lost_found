@@ -1,7 +1,9 @@
 {
   "pages": [
-    "pages/welcome/welcome",
     "pages/index/index",
+    "pages/my/my",
+    "pages/welcome/welcome",
+    "pages/agreement/agreement",
     "pages/publish/publish",
     "pages/detail/detail",
     "pages/claim-form/claim-form",
@@ -9,7 +11,6 @@
     "pages/my-claims/my-claims",
     "pages/messages/messages",
     "pages/handover/handover",
-    "pages/my/my",
     "pages/my-posts/my-posts",
     "pages/bookmarks/bookmarks",
     "pages/campus/campus",

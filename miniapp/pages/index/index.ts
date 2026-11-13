@@ -1,4 +1,5 @@
 import { request } from "../../utils/request";
+import { ensureLoggedIn } from "../../utils/auth";
 import { postStatus } from "../../utils/status";
 import { formatTime, mediaUrl } from "../../utils/format";
 import type { ItemPostListData, ItemPostView, StatsData } from "../../types/api";
@@ -144,7 +145,8 @@ Page({
     wx.navigateTo({ url: "/pages/detail/detail?id=" + e.currentTarget.dataset.id });
   },
 
-  goPublish() {
+  async goPublish() {
+    if (!(await ensureLoggedIn())) return;
     wx.navigateTo({ url: "/pages/publish/publish" });
   },
 

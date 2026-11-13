@@ -20,3 +20,44 @@
   color: var(--amber-deep);
   font-weight: 600;
 }
+
+.agree-row {
+  display: flex;
+  align-items: flex-start;
+  padding: 16rpx 8rpx 24rpx;
+}
+
+.checkbox {
+  width: 40rpx;
+  height: 40rpx;
+  border-radius: 8rpx;
+  border: 2rpx solid #c9c2ad;
+  background: #fff;
+  flex-shrink: 0;
+  margin-right: 16rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.checkbox.checked {
+  background: var(--pine);
+  border-color: var(--pine);
+}
+
+.checkmark {
+  color: #fff;
+  font-size: 26rpx;
+  line-height: 1;
+}
+
+.agree-text {
+  font-size: 26rpx;
+  color: var(--ink-soft);
+  line-height: 40rpx;
+}
+
+.link {
+  color: var(--pine);
+  text-decoration: underline;
+}

@@ -1,4 +1,5 @@
 import { request } from "../../utils/request";
+import { ensureLoggedIn } from "../../utils/auth";
 import { fetchMe, getUserId } from "../../utils/me";
 import { clueStatus, postStatus } from "../../utils/status";
 import { formatTime, mediaUrl } from "../../utils/format";
@@ -93,7 +94,8 @@ Page({
     wx.navigateTo({ url: "/pages/claims/claims?postId=" + this.data.id });
   },
 
-  goClaimForm() {
+  async goClaimForm() {
+    if (!(await ensureLoggedIn())) return;
     wx.navigateTo({ url: "/pages/claim-form/claim-form?postId=" + this.data.id });
   },
 
@@ -102,6 +104,7 @@ Page({
   },
 
   async submitClue() {
+    if (!(await ensureLoggedIn())) return;
     const content = this.data.clueInput.trim();
     if (!content) {
       wx.showToast({ title: "请填写线索内容", icon: "none" });
@@ -129,6 +132,7 @@ Page({
   },
 
   async onBookmark() {
+    if (!(await ensureLoggedIn())) return;
     try {
       if (this.data.bookmarked) {
         await request<Record<string, never>>({ url: `/posts/${this.data.id}/bookmark`, method: "DELETE" });
@@ -145,6 +149,7 @@ Page({
 
   async onBlock() {
     if (!this.data.post) return;
+    if (!(await ensureLoggedIn())) return;
     const res = await new Promise<boolean>((r) =>
       wx.showModal({ title: "拉黑发布者", content: "拉黑后对方无法再向你发送消息或申请。", success: (m) => r(m.confirm), fail: () => r(false) })
     );
@@ -174,6 +179,7 @@ Page({
   },
 
   async submitReport() {
+    if (!(await ensureLoggedIn())) return;
     this.setData({ submitting: true });
     try {
       await request<unknown>({
