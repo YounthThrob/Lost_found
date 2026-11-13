@@ -7,8 +7,8 @@ export const API_BASE = "http://127.0.0.1:8000/api/v1";
 // 图片静态托管根（/media/{storage_key}）。与 API_BASE 同主机，去掉 /api/v1 前缀。
 export const MEDIA_BASE = "http://127.0.0.1:8000";
 
-// 开发环境无真实微信登录时，使用固定的 mock code（对应后端 code2session 测试账号）。
-// 上线前必须置为空字符串，改用 wx.login 获取真实 code。
-export const MOCK_CODE = "valid-code";
+// 空字符串 = 使用 wx.login 获取真实 code，由后端 code2session 换取 openid（真实微信授权登录）。
+// 如需本地 mock 联调（后端 WECHAT_MOCK=true），可临时改为 "valid-code"。
+export const MOCK_CODE = "";
 
 export const APP_NAME = "校园失物招领（非官方）";
