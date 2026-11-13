@@ -1,30 +1,75 @@
-<view class="container">
-  <view wx:if="{{restricted}}" class="card" style="background: #f5e2dd; border-color: #e2c5bd;">
-    <view class="card-title" style="color: #b4473a;">账户已受限</view>
-    <view class="muted">部分操作已被限制，如有疑问可通过反馈渠道申诉。</view>
+<view class="page" style="padding-top: {{statusBarHeight}}px;">
+  <view class="ambient ambient-top"></view>
+  <view class="ambient ambient-side"></view>
+
+  <view class="page-head">
+    <view class="title-row"><text class="title-en">My</text><text class="title-cn">我的档案</text></view>
+    <view class="title-code">PERSONAL LEDGER / 01</view>
+    <image class="head-controls" src="/assets/ui/my-controls.png" mode="aspectFit" />
   </view>
 
-  <!-- 个人身份 -->
-  <view class="card profile-card" bindtap="goCampus">
-    <view class="profile-row">
-      <view class="avatar">{{school ? school.slice(0, 1) : '迹'}}</view>
-      <view class="profile-info">
+  <view wx:if="{{restricted}}" class="restricted-note">
+    <text class="restricted-title">账户已受限</text>
+    <text>部分操作已被限制，如有疑问可通过反馈渠道申诉。</text>
+  </view>
+
+  <view class="profile-card" bindtap="goCampus">
+    <view class="profile-route"></view><view class="profile-node node-one"></view><view class="profile-node node-two"></view>
+    <view class="profile-main">
+      <view class="avatar-ring"><view class="avatar">{{school ? school.slice(0, 1) : '迹'}}</view><view class="avatar-mark"></view></view>
+      <view class="profile-copy">
+        <view class="profile-kicker">CAMPUS PROFILE</view>
         <view class="profile-school">{{school || '未设置学校'}}</view>
         <view class="profile-meta">
-          <text class="tag {{verified ? 'tag-green' : 'tag-gray'}}">{{verified ? '已核验校园邮箱' : '未核验'}}</text>
-          <text class="faint">学校为用户自报，未经校方认证</text>
+          <view class="verify-chip {{verified ? 'verified' : ''}}"><view class="verify-dot"></view><text>{{verified ? '已核验' : '未核验'}}</text></view>
+          <text class="profile-note">学校信息由用户自报</text>
         </view>
       </view>
-      <text class="arrow">›</text>
+      <view class="profile-arrow-wrap"><image src="/assets/ui/my-arrow.png" mode="aspectFit" /></view>
+    </view>
+    <view class="profile-foot">
+      <view class="profile-foot-cell edition-cell"><view class="foot-label">LEDGER EDITION</view><view class="foot-value mono">2026 · 11</view></view>
+      <view class="profile-foot-cell trust-cell"><view class="foot-label">TRUST NOTE</view><view class="foot-value">互助记录，而非身份认证</view></view>
     </view>
   </view>
 
-  <view class="card">
-    <view wx:for="{{menu}}" wx:key="url" class="menu-item" data-url="{{item.url}}" bindtap="nav">
-      <text>{{item.label}}</text>
-      <text class="arrow">›</text>
+  <view class="section-head-custom"><text class="section-title-custom">我的记录</text><text class="section-code-custom">ACTIVITY / 03</text></view>
+  <view class="record-grid">
+    <view class="record-card" data-url="/pages/my-posts/my-posts" bindtap="nav">
+      <view class="record-code">01 / POSTS</view><view class="record-count">{{postCount}}</view>
+      <image class="record-symbol symbol-green" src="/assets/ui/my-plus.png" mode="aspectFit" />
+      <view class="record-bottom"><text>我的发布</text><image src="/assets/ui/my-arrow.png" mode="aspectFit" /></view>
+    </view>
+    <view class="record-card" data-url="/pages/my-claims/my-claims" bindtap="nav">
+      <view class="record-code">02 / CLAIMS</view><view class="record-count">{{claimCount}}</view>
+      <image class="record-symbol symbol-orange" src="/assets/ui/my-check.png" mode="aspectFit" />
+      <view class="record-bottom orange"><text>我的申请</text><image src="/assets/ui/my-arrow.png" mode="aspectFit" /></view>
+    </view>
+    <view class="record-card" data-url="/pages/bookmarks/bookmarks" bindtap="nav">
+      <view class="record-code">03 / SAVED</view><view class="record-count">{{bookmarkCount}}</view>
+      <image class="record-symbol symbol-muted" src="/assets/ui/my-bookmark.png" mode="aspectFit" />
+      <view class="record-bottom"><text>我的收藏</text><image src="/assets/ui/my-arrow.png" mode="aspectFit" /></view>
     </view>
   </view>
 
-  <view class="disclaimer" style="text-align: center;">本平台为互助工具，非校方官方平台，不核验用户身份。</view>
+  <view class="section-head-custom archive-head"><text class="section-title-custom">档案与安全</text><text class="section-code-custom">INDEX / 04</text></view>
+  <view class="archive-card">
+    <view wx:for="{{archiveMenu}}" wx:key="url" class="archive-row" data-url="{{item.url}}" bindtap="nav">
+      <view class="archive-icon-wrap {{item.tone}}"><image src="{{item.icon}}" mode="aspectFit" /></view>
+      <view class="archive-copy"><view class="archive-title">{{item.label}}</view><view class="archive-desc">{{item.desc}}</view></view>
+      <view class="archive-index">{{item.code}} →</view>
+    </view>
+  </view>
+
+  <view class="boundary-note">
+    <view class="boundary-rule"></view>
+    <view class="boundary-copy"><view class="boundary-dot"></view><text>非官方校园互助工具 · 不核验用户身份与物品所有权</text></view>
+    <view class="boundary-code">BOUNDARY NOTE / PUBLIC INTEREST RECORD</view>
+  </view>
+
+  <view class="custom-tabbar">
+    <view class="tab-item" bindtap="goHome"><image class="tab-home-icon" src="/assets/ui/home.png" mode="aspectFit" /><text>广场</text></view>
+    <text class="tab-index">02 / 02</text>
+    <view class="tab-item active"><view class="tab-icon-active"><image src="/assets/ui/my-user.png" mode="aspectFit" /></view><text>我的</text></view>
+  </view>
 </view>
