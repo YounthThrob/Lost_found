@@ -10,19 +10,20 @@ interface IndexItem extends ItemPostView {
   cover: string;
   imageCount: number;
   glyph: string;
+  placeholder: string;
 }
 
 const CATEGORIES = ["全部", "校园卡", "证件", "电子产品", "生活用品", "衣物", "其他"];
 const TYPE_TABS = [
-  { key: "", label: "全部" },
-  { key: "LOST", label: "寻物" },
   { key: "FOUND", label: "招领" },
+  { key: "LOST", label: "寻物" },
 ];
 
 Page({
   data: {
+    statusBarHeight: 47,
     keyword: "",
-    activeType: "",
+    activeType: "FOUND",
     activeCategory: "全部",
     typeTabs: TYPE_TABS,
     categories: CATEGORIES,
@@ -35,6 +36,7 @@ Page({
   },
 
   onShow() {
+    wx.hideTabBar({ animation: false });
     this.reload();
   },
 
@@ -63,6 +65,7 @@ Page({
       cover: mediaUrl(images[0]?.url),
       imageCount: images.length,
       glyph: (it.category || "物").slice(0, 1),
+      placeholder: it.category === "校园卡" ? "/assets/ui/campus-card.png" : "/assets/ui/umbrella.png",
     };
   },
 
@@ -124,5 +127,10 @@ Page({
 
   goPublish() {
     wx.navigateTo({ url: "/pages/publish/publish" });
+  },
+
+  goMy() {
+    wx.showTabBar({ animation: false });
+    wx.switchTab({ url: "/pages/my/my" });
   },
 });

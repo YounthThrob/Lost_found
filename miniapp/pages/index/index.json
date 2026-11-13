@@ -1,5 +1,6 @@
 {
-  "navigationBarTitleText": "寻迹",
+  "navigationStyle": "custom",
+  "navigationBarTitleText": "拾光",
   "enablePullDownRefresh": true,
   "backgroundTextStyle": "dark"
 }

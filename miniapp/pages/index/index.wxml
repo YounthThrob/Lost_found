@@ -1,70 +1,123 @@
-<view class="page">
-  <!-- 页首：寻迹图谱 -->
-  <view class="hero">
-    <view class="hero-top">
-      <view class="hero-title">寻迹</view>
-      <view class="hero-coord">校园互助 · 失物招领</view>
-    </view>
-    <view class="hero-sub">本平台为<text class="hero-mark">非官方</text>互助工具，学校信息由用户自报</view>
-    <view class="hero-scale"></view>
-  </view>
+<view class="page" style="padding-top: {{statusBarHeight}}px;">
+  <view class="ambient ambient-top"></view>
 
-  <!-- 搜索 -->
-  <view class="search-row">
-    <view class="search-input-wrap">
-      <text class="search-glyph">⌕</text>
-      <input class="search-input" placeholder="搜索物品、地点或描述" value="{{keyword}}" bindinput="onKeyword" confirm-type="search" bindconfirm="onSearch" />
+  <view class="brand-bar">
+    <view class="brand-identity">
+      <image class="brand-logo" src="/assets/ui/logo.png" mode="aspectFit" />
+      <view class="brand-copy">
+        <view class="brand-name">拾光</view>
+        <view class="brand-en">LOST / FOUND COMMONS</view>
+      </view>
+    </view>
+    <view class="unofficial-pill">
+      <view class="unofficial-dot"></view>
+      <text>非官方校园互助</text>
     </view>
   </view>
 
-  <!-- 类型：全部 / 寻物 / 招领 -->
-  <view class="type-tabs">
-    <view
-      wx:for="{{typeTabs}}"
-      wx:key="key"
-      class="type-tab {{activeType === item.key ? 'active' : ''}} {{item.key === 'LOST' ? 'is-lost' : item.key === 'FOUND' ? 'is-found' : 'is-all'}}"
-      data-type="{{item.key}}"
-      bindtap="switchType"
-    >{{item.label}}</view>
+  <view class="search-shell">
+    <image class="search-icon" src="/assets/ui/search.png" mode="aspectFit" />
+    <input class="search-input" placeholder="搜索物品、地点或线索" placeholder-class="search-placeholder" value="{{keyword}}" bindinput="onKeyword" confirm-type="search" bindconfirm="onSearch" />
+    <view class="search-divider"></view>
+    <image class="voice-icon" src="/assets/ui/voice.png" mode="aspectFit" />
   </view>
 
-  <!-- 分类 -->
-  <scroll-view scroll-x class="cat-scroll" enhanced show-scrollbar="{{false}}">
-    <view
-      wx:for="{{categories}}"
-      wx:key="*this"
-      class="cat-item {{activeCategory === item ? 'active' : ''}}"
-      data-cat="{{item}}"
-      bindtap="switchCategory"
-    >{{item}}</view>
-  </scroll-view>
+  <view class="atlas-card">
+    <view class="atlas-route route-muted"></view>
+    <view class="atlas-route route-active"></view>
+    <view class="atlas-node node-a"></view>
+    <view class="atlas-node node-b"></view>
+    <view class="atlas-node node-c"></view>
+    <view class="atlas-node node-d"></view>
+    <view class="atlas-rings"></view>
+    <view class="atlas-content">
+      <view class="atlas-kicker">FIELD NOTE / 11·13</view>
+      <view class="atlas-lead">今天，有</view>
+      <view class="atlas-number-row">
+        <text class="atlas-number">12</text>
+        <text class="atlas-number-copy">件物品找到方向</text>
+      </view>
+      <view class="atlas-note">每一条微小线索，都可能让归还发生</view>
+    </view>
+    <view class="atlas-action">查看轨迹 <text class="atlas-arrow">→</text></view>
+  </view>
 
-  <!-- 信息列表 -->
+  <view class="section-title-row">
+    <text class="section-title">信息广场</text>
+    <text class="section-code">LIVE INDEX · {{total}}</text>
+  </view>
+
+  <view class="type-switch">
+    <view wx:for="{{typeTabs}}" wx:key="key" class="type-option {{activeType === item.key ? 'active' : ''}}" data-type="{{item.key}}" bindtap="switchType">
+      <view class="type-dot {{item.key === 'FOUND' ? 'found' : 'lost'}}"></view>
+      <text class="type-label">{{item.label}}</text>
+      <text class="type-count">{{item.key === activeType ? total : '—'}}</text>
+    </view>
+  </view>
+
+  <view class="category-row">
+    <scroll-view scroll-x class="cat-scroll" enhanced show-scrollbar="{{false}}">
+      <view wx:for="{{categories}}" wx:key="*this" class="cat-item {{activeCategory === item ? 'active' : ''}}" data-cat="{{item}}" bindtap="switchCategory">{{item}}</view>
+    </scroll-view>
+    <image class="filter-icon" src="/assets/ui/filter.png" mode="aspectFit" />
+  </view>
+
   <view class="list">
     <view wx:for="{{items}}" wx:key="id" class="post-card" data-id="{{item.id}}" bindtap="goDetail">
-      <view class="post-media">
-        <image wx:if="{{item.cover}}" class="post-thumb" src="{{item.cover}}" mode="aspectFill" />
-        <view wx:else class="post-thumb post-thumb-empty">
-          <text class="post-glyph">{{item.glyph}}</text>
-        </view>
-        <view class="post-badge {{item.type === 'FOUND' ? 'is-found' : 'is-lost'}}">{{item.typeLabel}}</view>
-        <view wx:if="{{item.imageCount > 1}}" class="post-count">{{item.imageCount}}</view>
+      <view class="post-visual {{item.type === 'FOUND' ? 'visual-found' : 'visual-lost'}}">
+        <image class="post-image" src="{{item.cover || item.placeholder}}" mode="aspectFill" />
+        <view class="object-index">OBJ / {{index + 28 < 100 ? '0' : ''}}{{index + 28}}</view>
       </view>
-      <view class="post-body">
+      <view class="post-content">
+        <view class="post-head">
+          <view class="post-badge {{item.type === 'FOUND' ? 'is-found' : 'is-lost'}}">
+            <view class="badge-dot"></view>
+            <text>{{item.typeLabel}}</text>
+          </view>
+          <text class="post-time">{{item.timeLabel}}</text>
+        </view>
         <view class="post-title">{{item.title}}</view>
         <view class="post-desc">{{item.publicDescription}}</view>
-        <view class="post-meta">
-          <text class="post-meta-item">{{item.category}}</text>
-          <text class="post-dot">·</text>
-          <text class="post-meta-item post-school">{{item.school}}</text>
-          <text class="post-time">{{item.timeLabel}}</text>
+        <view class="post-rule"></view>
+        <view class="post-foot">
+          <view class="post-location">
+            <image class="location-icon" src="/assets/ui/location.png" mode="aspectFit" />
+            <text>{{item.campus || item.school}} · {{item.area || item.category}}</text>
+          </view>
+          <view class="self-declared">用户自报 · 未认证</view>
         </view>
       </view>
     </view>
   </view>
 
-  <view wx:if="{{!loading && items.length === 0}}" class="empty">暂无相关信息</view>
-  <view wx:if="{{loading}}" class="empty">加载中…</view>
+  <view wx:if="{{!loading && items.length === 0}}" class="empty-state">
+    <view class="empty-index">NO RECORD</view>
+    <view class="empty-title">暂无相关信息</view>
+  </view>
+  <view wx:if="{{loading}}" class="empty-state">
+    <view class="loading-line"></view>
+    <view class="empty-title">正在读取线索</view>
+  </view>
 
-  <view class="fab" bindtap="goPublish">＋</view>
+  <view wx:if="{{items.length > 0}}" class="continuation">
+    <view class="continuation-line"></view>
+    <text>INDEX CONTINUES / {{total > items.length ? total - items.length : 0}} MORE RECORDS</text>
+  </view>
+
+  <view class="fab-wrap" bindtap="goPublish">
+    <view class="fab"><image class="plus-icon" src="/assets/ui/plus.png" mode="aspectFit" /></view>
+    <text class="fab-label">NEW RECORD</text>
+  </view>
+
+  <view class="custom-tabbar">
+    <view class="tab-item active">
+      <view class="tab-icon-active"><image src="/assets/ui/home.png" mode="aspectFit" /></view>
+      <text>广场</text>
+    </view>
+    <text class="tab-index">01 / 02</text>
+    <view class="tab-item" bindtap="goMy">
+      <image class="tab-user-icon" src="/assets/ui/user.png" mode="aspectFit" />
+      <text>我的</text>
+    </view>
+  </view>
 </view>
