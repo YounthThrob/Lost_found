@@ -7,8 +7,12 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.multipart.MultipartFile;
 
+import java.io.IOException;
+import java.util.LinkedHashMap;
 import java.util.Map;
 
 @RestController
@@ -22,6 +26,12 @@ public class AccountController {
     }
 
     public record LoginRequest(String code) {
+    }
+
+    public record ProfileUpdate(String nickname) {
+    }
+
+    public record ProfileView(String nickname, String avatarUrl) {
     }
 
     public record CampusProfileUpdate(String school, String campus) {
@@ -48,10 +58,29 @@ public class AccountController {
     @GetMapping("/me")
     public Envelope.Response<Map<String, Object>> me(Authentication authentication) {
         UserAccount user = accountService.currentUser(authentication.getName());
-        return Envelope.ok(Map.of(
-            "id", user.id(),
-            "status", user.status(),
-            "agreementAccepted", user.agreementAccepted()));
+        Map<String, Object> data = new LinkedHashMap<>();
+        data.put("id", user.id());
+        data.put("status", user.status());
+        data.put("agreementAccepted", user.agreementAccepted());
+        data.put("nickname", user.nickname());
+        data.put("avatarUrl", avatarUrl(user));
+        return Envelope.ok(data);
+    }
+
+    @PutMapping("/me/profile")
+    public Envelope.Response<ProfileView> putProfile(Authentication authentication,
+                                                     @RequestBody ProfileUpdate request) {
+        UserAccount user = accountService.updateProfile(authentication.getName(), request.nickname());
+        return Envelope.ok(meProfileView(user));
+    }
+
+    @PostMapping("/me/avatar")
+    public Envelope.Response<Map<String, Object>> uploadAvatar(Authentication authentication,
+                                                               @RequestParam("file") MultipartFile file)
+            throws IOException {
+        String url = accountService.setAvatar(
+            authentication.getName(), file.getBytes(), file.getContentType());
+        return Envelope.ok(Map.of("avatarUrl", url));
     }
 
     @PostMapping("/me/agreement")
@@ -93,5 +122,13 @@ public class AccountController {
     private CampusProfileView profileView(UserAccount user) {
         return new CampusProfileView(user.school(), user.campus(), user.verificationStatus(),
             user.verifiedEmail(), user.emailVerifiedAt());
+    }
+
+    private ProfileView meProfileView(UserAccount user) {
+        return new ProfileView(user.nickname(), avatarUrl(user));
+    }
+
+    private String avatarUrl(UserAccount user) {
+        return user.avatarKey() == null ? null : "/media/" + user.avatarKey();
     }
 }

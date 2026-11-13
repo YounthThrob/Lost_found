@@ -23,7 +23,7 @@ public class InMemoryUserStore {
     public UserAccount findByOpenid(String openid, String role) {
         return byOpenid.computeIfAbsent(openid,
             o -> new UserAccount(UUID.randomUUID().toString(), o, "ACTIVE", null, null, null, role,
-                "SELF_DECLARED", null, null));
+                "SELF_DECLARED", null, null, null, null));
     }
 
     public UserAccount findById(String id) {
@@ -43,7 +43,8 @@ public class InMemoryUserStore {
         }
         UserAccount updated = new UserAccount(user.id(), user.openid(), user.status(),
             Instant.now().toString(), user.school(), user.campus(), user.role(),
-            user.verificationStatus(), user.verifiedEmail(), user.emailVerifiedAt());
+            user.verificationStatus(), user.verifiedEmail(), user.emailVerifiedAt(),
+            user.nickname(), user.avatarKey());
         byOpenid.put(user.openid(), updated);
         return updated;
     }
@@ -55,7 +56,8 @@ public class InMemoryUserStore {
         }
         UserAccount updated = new UserAccount(user.id(), user.openid(), user.status(),
             user.agreementAcceptedAt(), school, campus, user.role(),
-            user.verificationStatus(), user.verifiedEmail(), user.emailVerifiedAt());
+            user.verificationStatus(), user.verifiedEmail(), user.emailVerifiedAt(),
+            user.nickname(), user.avatarKey());
         byOpenid.put(user.openid(), updated);
         return updated;
     }
@@ -67,7 +69,21 @@ public class InMemoryUserStore {
         }
         UserAccount updated = new UserAccount(user.id(), user.openid(), user.status(),
             user.agreementAcceptedAt(), user.school(), user.campus(), user.role(),
-            "EMAIL_VERIFIED", email, Instant.now().toString());
+            "EMAIL_VERIFIED", email, Instant.now().toString(),
+            user.nickname(), user.avatarKey());
+        byOpenid.put(user.openid(), updated);
+        return updated;
+    }
+
+    public UserAccount updateProfile(String userId, String nickname, String avatarKey) {
+        UserAccount user = findById(userId);
+        if (user == null) {
+            return null;
+        }
+        UserAccount updated = new UserAccount(user.id(), user.openid(), user.status(),
+            user.agreementAcceptedAt(), user.school(), user.campus(), user.role(),
+            user.verificationStatus(), user.verifiedEmail(), user.emailVerifiedAt(),
+            nickname, avatarKey);
         byOpenid.put(user.openid(), updated);
         return updated;
     }
@@ -87,7 +103,8 @@ public class InMemoryUserStore {
         }
         UserAccount updated = new UserAccount(user.id(), user.openid(), status,
             user.agreementAcceptedAt(), user.school(), user.campus(), user.role(),
-            user.verificationStatus(), user.verifiedEmail(), user.emailVerifiedAt());
+            user.verificationStatus(), user.verifiedEmail(), user.emailVerifiedAt(),
+            user.nickname(), user.avatarKey());
         byOpenid.put(user.openid(), updated);
         return updated;
     }

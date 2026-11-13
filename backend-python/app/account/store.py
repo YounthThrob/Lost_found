@@ -1,4 +1,4 @@
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from datetime import datetime, timezone
 from uuid import uuid4
 
@@ -19,6 +19,8 @@ class UserAccount:
     verification_status: str = "SELF_DECLARED"
     verified_email: str | None = None
     email_verified_at: str | None = None
+    nickname: str | None = None
+    avatar_key: str | None = None
 
     @property
     def agreement_accepted(self) -> bool:
@@ -54,18 +56,7 @@ class InMemoryUserStore:
             return None
         if user.agreement_accepted:
             return user
-        updated = UserAccount(
-            id=user.id,
-            openid=user.openid,
-            status=user.status,
-            agreement_accepted_at=_now(),
-            school=user.school,
-            campus=user.campus,
-            role=user.role,
-            verification_status=user.verification_status,
-            verified_email=user.verified_email,
-            email_verified_at=user.email_verified_at,
-        )
+        updated = replace(user, agreement_accepted_at=_now())
         self._by_openid[user.openid] = updated
         return updated
 
@@ -73,18 +64,7 @@ class InMemoryUserStore:
         user = self.find_by_id(user_id)
         if user is None:
             return None
-        updated = UserAccount(
-            id=user.id,
-            openid=user.openid,
-            status=user.status,
-            agreement_accepted_at=user.agreement_accepted_at,
-            school=school,
-            campus=campus,
-            role=user.role,
-            verification_status=user.verification_status,
-            verified_email=user.verified_email,
-            email_verified_at=user.email_verified_at,
-        )
+        updated = replace(user, school=school, campus=campus)
         self._by_openid[user.openid] = updated
         return updated
 
@@ -92,18 +72,20 @@ class InMemoryUserStore:
         user = self.find_by_id(user_id)
         if user is None:
             return None
-        updated = UserAccount(
-            id=user.id,
-            openid=user.openid,
-            status=user.status,
-            agreement_accepted_at=user.agreement_accepted_at,
-            school=user.school,
-            campus=user.campus,
-            role=user.role,
+        updated = replace(
+            user,
             verification_status="EMAIL_VERIFIED",
             verified_email=email,
             email_verified_at=_now(),
         )
+        self._by_openid[user.openid] = updated
+        return updated
+
+    def update_profile(self, user_id: str, nickname: str | None, avatar_key: str | None) -> UserAccount | None:
+        user = self.find_by_id(user_id)
+        if user is None:
+            return None
+        updated = replace(user, nickname=nickname, avatar_key=avatar_key)
         self._by_openid[user.openid] = updated
         return updated
 
@@ -117,17 +99,6 @@ class InMemoryUserStore:
         user = self.find_by_id(user_id)
         if user is None:
             return None
-        updated = UserAccount(
-            id=user.id,
-            openid=user.openid,
-            status=status,
-            agreement_accepted_at=user.agreement_accepted_at,
-            school=user.school,
-            campus=user.campus,
-            role=user.role,
-            verification_status=user.verification_status,
-            verified_email=user.verified_email,
-            email_verified_at=user.email_verified_at,
-        )
+        updated = replace(user, status=status)
         self._by_openid[user.openid] = updated
         return updated

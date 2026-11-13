@@ -53,6 +53,16 @@ EXPECTED = {
     "campus_verification_invalid_code": {"status": 422, "error_code": "VERIFICATION_CODE_INVALID"},
     "campus_verification_confirm": {"status": 200, "verification_status": "EMAIL_VERIFIED", "verified_email": "student@school.edu.cn"},
     "campus_verification_reconfirm": {"status": 200, "verification_status": "EMAIL_VERIFIED", "verified_email": "new@school.edu.cn"},
+    "profile_initial_null": {"status": 200, "nickname": None, "avatar_url": None},
+    "profile_set_nickname": {"status": 200, "nickname": "测试昵称"},
+    "profile_me_reflects": {"status": 200, "nickname": "测试昵称"},
+    "profile_nickname_empty": {"status": 422, "error_code": "VALIDATION_FAILED"},
+    "profile_nickname_too_long": {"status": 422, "error_code": "VALIDATION_FAILED"},
+    "profile_avatar_upload": {"status": 200, "has_url": True, "url_prefix": True},
+    "profile_avatar_bad_type": {"status": 422, "error_code": "VALIDATION_FAILED"},
+    "profile_avatar_oversize": {"status": 422, "error_code": "VALIDATION_FAILED"},
+    "profile_me_after_avatar": {"status": 200, "avatar_url_prefix": True},
+    "profile_not_in_public": {"no_nickname": True, "no_avatar": True},
     "listing_create_unconfirmed": {"status": 403, "error_code": "AGREEMENT_NOT_ACCEPTED"},
     "listing_create": {"status": 200, "post_status": "DRAFT", "has_id": True},
     "listing_search_draft_hidden": {"status": 200, "total": 0},
@@ -328,6 +338,66 @@ def probe(base: str) -> dict:
         "status": rv5.status_code,
         "verification_status": rv5.json().get("data", {}).get("verificationStatus"),
         "verified_email": rv5.json().get("data", {}).get("verifiedEmail"),
+    }
+
+    # ---- user-profile ----
+    rp0 = httpx.get(base + "/api/v1/me", headers=headers)
+    sig["profile_initial_null"] = {
+        "status": rp0.status_code,
+        "nickname": rp0.json().get("data", {}).get("nickname"),
+        "avatar_url": rp0.json().get("data", {}).get("avatarUrl"),
+    }
+
+    rp1 = httpx.put(base + "/api/v1/me/profile", headers=headers, json={"nickname": "测试昵称"})
+    sig["profile_set_nickname"] = {
+        "status": rp1.status_code,
+        "nickname": rp1.json().get("data", {}).get("nickname"),
+    }
+
+    rp2 = httpx.get(base + "/api/v1/me", headers=headers)
+    sig["profile_me_reflects"] = {
+        "status": rp2.status_code,
+        "nickname": rp2.json().get("data", {}).get("nickname"),
+    }
+
+    rp3 = httpx.put(base + "/api/v1/me/profile", headers=headers, json={"nickname": ""})
+    sig["profile_nickname_empty"] = {
+        "status": rp3.status_code,
+        "error_code": rp3.json().get("error", {}).get("code"),
+    }
+
+    rp4 = httpx.put(base + "/api/v1/me/profile", headers=headers, json={"nickname": "x" * 31})
+    sig["profile_nickname_too_long"] = {
+        "status": rp4.status_code,
+        "error_code": rp4.json().get("error", {}).get("code"),
+    }
+
+    rp5 = httpx.post(base + "/api/v1/me/avatar", headers=headers,
+                     files={"file": ("avatar.jpg", b"fake-jpeg-bytes", "image/jpeg")})
+    sig["profile_avatar_upload"] = {
+        "status": rp5.status_code,
+        "has_url": bool(rp5.json().get("data", {}).get("avatarUrl")),
+        "url_prefix": (rp5.json().get("data", {}).get("avatarUrl") or "").startswith("/media/"),
+    }
+
+    rp6 = httpx.post(base + "/api/v1/me/avatar", headers=headers,
+                     files={"file": ("avatar.gif", b"gif-bytes", "image/gif")})
+    sig["profile_avatar_bad_type"] = {
+        "status": rp6.status_code,
+        "error_code": rp6.json().get("error", {}).get("code"),
+    }
+
+    rp7 = httpx.post(base + "/api/v1/me/avatar", headers=headers,
+                     files={"file": ("big.jpg", b"x" * (10 * 1024 * 1024 + 1), "image/jpeg")})
+    sig["profile_avatar_oversize"] = {
+        "status": rp7.status_code,
+        "error_code": rp7.json().get("error", {}).get("code"),
+    }
+
+    rp8 = httpx.get(base + "/api/v1/me", headers=headers)
+    sig["profile_me_after_avatar"] = {
+        "status": rp8.status_code,
+        "avatar_url_prefix": (rp8.json().get("data", {}).get("avatarUrl") or "").startswith("/media/"),
     }
 
     # ---- listing ----
@@ -986,6 +1056,10 @@ def probe(base: str) -> dict:
     sig["public_detail"] = {
         "status": rpub2.status_code,
         "post_status": rpub2.json().get("data", {}).get("status"),
+    }
+    sig["profile_not_in_public"] = {
+        "no_nickname": "nickname" not in rpub2.json().get("data", {}),
+        "no_avatar": "avatarUrl" not in rpub2.json().get("data", {}),
     }
 
     rpub3 = httpx.get(base + "/api/v1/stats")

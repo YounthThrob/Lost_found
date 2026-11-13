@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, File, UploadFile
 from pydantic import BaseModel
 
 from app.account import service
@@ -10,6 +10,10 @@ router = APIRouter()
 
 class LoginRequest(BaseModel):
     code: str
+
+
+class ProfileUpdate(BaseModel):
+    nickname: str
 
 
 class CampusProfileUpdate(BaseModel):
@@ -45,7 +49,25 @@ def login(request: LoginRequest):
 @router.get("/me")
 def me(user_id: str = Depends(get_current_user)):
     user = service.current_user(user_id)
-    return envelope({"id": user.id, "status": user.status, "agreementAccepted": user.agreement_accepted})
+    return envelope({
+        "id": user.id,
+        "status": user.status,
+        "agreementAccepted": user.agreement_accepted,
+        "nickname": user.nickname,
+        "avatarUrl": service.avatar_url(user.avatar_key),
+    })
+
+
+@router.put("/me/profile")
+def put_profile(request: ProfileUpdate, user_id: str = Depends(get_current_user)):
+    user = service.update_profile(user_id, request.nickname)
+    return envelope(service.profile_view(user))
+
+
+@router.post("/me/avatar")
+def upload_avatar(file: UploadFile = File(...), user_id: str = Depends(get_current_user)):
+    url = service.set_avatar(user_id, file.file.read(), file.content_type)
+    return envelope({"avatarUrl": url})
 
 
 @router.post("/me/agreement")

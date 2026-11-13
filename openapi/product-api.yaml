@@ -73,6 +73,75 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
+  /me/profile:
+    put:
+      summary: 设置或更新用户昵称
+      operationId: putProfile
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ProfileUpdate"
+      responses:
+        "200":
+          description: 更新成功，返回昵称与头像地址
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProfileResponse"
+        "401":
+          description: 会话无效或已过期
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "422":
+          description: 昵称校验失败
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  /me/avatar:
+    post:
+      summary: 上传用户头像
+      operationId: uploadAvatar
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required:
+                - file
+              properties:
+                file:
+                  type: string
+                  format: binary
+                  description: 头像图片（jpeg/png/webp，≤10MB）
+      responses:
+        "200":
+          description: 上传成功，返回头像地址
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AvatarResponse"
+        "401":
+          description: 会话无效或已过期
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "422":
+          description: 头像类型/大小校验失败
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
   /me/campus-profile:
     get:
       summary: 查询当前用户自报学校与校区
@@ -1824,6 +1893,8 @@ components:
             - id
             - status
             - agreementAccepted
+            - nickname
+            - avatarUrl
           properties:
             id:
               type: string
@@ -1831,6 +1902,62 @@ components:
               type: string
             agreementAccepted:
               type: boolean
+            nickname:
+              type: ["string", "null"]
+              description: 用户昵称（未设置为 null）
+            avatarUrl:
+              type: ["string", "null"]
+              description: 头像地址（未设置为 null）
+        requestId:
+          type: string
+        timestamp:
+          type: string
+          format: date-time
+    ProfileUpdate:
+      type: object
+      required:
+        - nickname
+      properties:
+        nickname:
+          type: string
+          description: 用户昵称（非空，≤30 字符）
+    ProfileResponse:
+      type: object
+      required:
+        - data
+        - requestId
+        - timestamp
+      properties:
+        data:
+          type: object
+          required:
+            - nickname
+            - avatarUrl
+          properties:
+            nickname:
+              type: ["string", "null"]
+            avatarUrl:
+              type: ["string", "null"]
+        requestId:
+          type: string
+        timestamp:
+          type: string
+          format: date-time
+    AvatarResponse:
+      type: object
+      required:
+        - data
+        - requestId
+        - timestamp
+      properties:
+        data:
+          type: object
+          required:
+            - avatarUrl
+          properties:
+            avatarUrl:
+              type: string
+              description: 头像地址（/media/{storage_key}）
         requestId:
           type: string
         timestamp:
