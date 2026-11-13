@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends, File, Query, UploadFile
 from pydantic import BaseModel
 
 from app.account.deps import require_agreement
@@ -29,6 +29,10 @@ class ItemPostUpdate(BaseModel):
     area: str | None = None
 
 
+def _image_view(image) -> dict:
+    return {"id": image.id, "url": "/media/" + image.storage_key, "sortOrder": image.sort_order}
+
+
 def _view(post) -> dict:
     return {
         "id": post.id,
@@ -43,6 +47,7 @@ def _view(post) -> dict:
         "authorId": post.author_id,
         "createdAt": post.created_at,
         "updatedAt": post.updated_at,
+        "images": [_image_view(i) for i in service.list_images(post.id)],
     }
 
 
@@ -85,6 +90,18 @@ def publish_post(post_id: str, user_id: str = Depends(require_agreement)):
 @router.post("/posts/{post_id}/close")
 def close_post(post_id: str, user_id: str = Depends(require_agreement)):
     return envelope(_view(service.close(user_id, post_id)))
+
+
+@router.post("/posts/{post_id}/images")
+def upload_image(post_id: str, file: UploadFile = File(...), user_id: str = Depends(require_agreement)):
+    image = service.upload_image(user_id, post_id, file.file.read(), file.content_type)
+    return envelope(_image_view(image))
+
+
+@router.delete("/posts/{post_id}/images/{image_id}")
+def delete_image(post_id: str, image_id: str, user_id: str = Depends(require_agreement)):
+    service.delete_image(user_id, post_id, image_id)
+    return envelope({})
 
 
 @router.get("/posts/{post_id}")

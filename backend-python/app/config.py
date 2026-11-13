@@ -15,3 +15,9 @@ WECHAT_SECRET = os.environ.get("WECHAT_SECRET", "")
 # JWT 会话配置。HS256 要求密钥长度 >= 32 字节。
 JWT_SECRET = os.environ.get("JWT_SECRET", "dev-only-secret-key-please-change-0123456789")
 JWT_TTL_SECONDS = int(os.environ.get("JWT_TTL_SECONDS", "7200"))
+
+# 校园邮箱域名白名单（逗号分隔，为空表示不限制）。
+CAMPUS_EMAIL_DOMAINS = os.environ.get("CAMPUS_EMAIL_DOMAINS", "")
+
+# 图片本地存储目录。
+STORAGE_LOCAL_DIR = os.environ.get("STORAGE_LOCAL_DIR", "./data/media")

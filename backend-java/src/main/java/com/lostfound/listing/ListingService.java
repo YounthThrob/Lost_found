@@ -4,10 +4,12 @@ import com.lostfound.abuse.RateLimiter;
 import com.lostfound.moderation.ContentModerator;
 import com.lostfound.shared.BusinessException;
 import com.lostfound.shared.ErrorCode;
+import com.lostfound.storage.Storage;
 import org.springframework.stereotype.Service;
 
 import java.time.Instant;
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 
 @Service
@@ -32,15 +34,23 @@ public class ListingService {
     private static final int MAX_DESCRIPTION = 2000;
     private static final int MAX_FIELD = 100;
     private static final int MAX_PAGE_SIZE = 100;
+    private static final int MAX_IMAGE_BYTES = 10 * 1024 * 1024;
+    private static final int MAX_IMAGES_PER_POST = 9;
+    private static final Set<String> ALLOWED_IMAGE_TYPES = Set.of("image/jpeg", "image/png", "image/webp");
 
     private final ItemPostStore store;
+    private final ItemImageStore imageStore;
     private final ContentModerator moderator;
     private final RateLimiter rateLimiter;
+    private final Storage storage;
 
-    public ListingService(ItemPostStore store, ContentModerator moderator, RateLimiter rateLimiter) {
+    public ListingService(ItemPostStore store, ItemImageStore imageStore, ContentModerator moderator,
+                          RateLimiter rateLimiter, Storage storage) {
         this.store = store;
+        this.imageStore = imageStore;
         this.moderator = moderator;
         this.rateLimiter = rateLimiter;
+        this.storage = storage;
     }
 
     public ItemPost createDraft(String authorId, ItemPostCreate input) {
@@ -151,6 +161,47 @@ public class ListingService {
         List<ItemPost> items = from >= total ? List.of() : all.subList(from, Math.min(from + pageSize, total));
         boolean hasMore = from + pageSize < total;
         return new SearchResult(items, new Pagination(page, pageSize, total, hasMore));
+    }
+
+    public ItemImage uploadImage(String authorId, String postId, byte[] content, String contentType) {
+        ItemPost post = requireOwned(authorId, postId);
+        if (!"DRAFT".equals(post.status())) {
+            throw new BusinessException(ErrorCode.INVALID_STATE_TRANSITION);
+        }
+        String normalizedType = contentType == null ? "" : contentType.trim();
+        if (!ALLOWED_IMAGE_TYPES.contains(normalizedType)) {
+            throw new BusinessException(ErrorCode.VALIDATION_FAILED);
+        }
+        if (content == null || content.length > MAX_IMAGE_BYTES) {
+            throw new BusinessException(ErrorCode.VALIDATION_FAILED);
+        }
+        int sortOrder = imageStore.listByPost(postId).size();
+        if (sortOrder >= MAX_IMAGES_PER_POST) {
+            throw new BusinessException(ErrorCode.VALIDATION_FAILED);
+        }
+        String id = UUID.randomUUID().toString();
+        String storageKey = UUID.randomUUID().toString();
+        storage.put(storageKey, content, normalizedType);
+        ItemImage image = new ItemImage(id, postId, storageKey, sortOrder, "PENDING");
+        imageStore.save(image);
+        return image;
+    }
+
+    public void deleteImage(String authorId, String postId, String imageId) {
+        ItemPost post = requireOwned(authorId, postId);
+        if (!"DRAFT".equals(post.status())) {
+            throw new BusinessException(ErrorCode.INVALID_STATE_TRANSITION);
+        }
+        ItemImage image = imageStore.findById(imageId);
+        if (image == null || !image.postId().equals(postId)) {
+            throw new BusinessException(ErrorCode.NOT_FOUND);
+        }
+        storage.delete(image.storageKey());
+        imageStore.delete(imageId);
+    }
+
+    public List<ItemImage> listImages(String postId) {
+        return imageStore.listByPost(postId);
     }
 
     private ItemPost requireOwned(String authorId, String postId) {

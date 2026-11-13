@@ -2,6 +2,7 @@ package com.lostfound.operations;
 
 import com.lostfound.account.UserAccount;
 import com.lostfound.listing.ListingController;
+import com.lostfound.listing.ListingService;
 import com.lostfound.moderation.ReportController;
 import com.lostfound.shared.Envelope;
 import org.springframework.security.core.Authentication;
@@ -22,10 +23,12 @@ public class OperationsController {
 
     private final OperationsService service;
     private final OperatorGuard guard;
+    private final ListingService listingService;
 
-    public OperationsController(OperationsService service, OperatorGuard guard) {
+    public OperationsController(OperationsService service, OperatorGuard guard, ListingService listingService) {
         this.service = service;
         this.guard = guard;
+        this.listingService = listingService;
     }
 
     public record UserStatusView(String id, String status) {
@@ -55,8 +58,9 @@ public class OperationsController {
             @PathVariable String postId,
             @RequestBody OperationsService.AdminActionRequest request) {
         guard.requireOperator(authentication.getName());
+        var post = service.removePost(authentication.getName(), postId, request.reason());
         return Envelope.ok(ListingController.ItemPostView.from(
-            service.removePost(authentication.getName(), postId, request.reason())));
+            post, listingService.listImages(post.id())));
     }
 
     @PostMapping("/admin/users/{userId}/restrict")

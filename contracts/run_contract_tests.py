@@ -48,6 +48,11 @@ EXPECTED = {
     "campus_put": {"status": 200, "school": "南方大学", "campus": "东校区", "verification_status": "SELF_DECLARED"},
     "campus_get": {"status": 200, "school": "南方大学", "campus": "东校区"},
     "campus_invalid": {"status": 422, "error_code": "VALIDATION_FAILED"},
+    "campus_verification_send": {"status": 200, "expires_in_seconds": 300},
+    "campus_verification_invalid_email": {"status": 422, "error_code": "VALIDATION_FAILED"},
+    "campus_verification_invalid_code": {"status": 422, "error_code": "VERIFICATION_CODE_INVALID"},
+    "campus_verification_confirm": {"status": 200, "verification_status": "EMAIL_VERIFIED", "verified_email": "student@school.edu.cn"},
+    "campus_verification_reconfirm": {"status": 200, "verification_status": "EMAIL_VERIFIED", "verified_email": "new@school.edu.cn"},
     "listing_create_unconfirmed": {"status": 403, "error_code": "AGREEMENT_NOT_ACCEPTED"},
     "listing_create": {"status": 200, "post_status": "DRAFT", "has_id": True},
     "listing_search_draft_hidden": {"status": 200, "total": 0},
@@ -70,6 +75,18 @@ EXPECTED = {
     "listing_invalid_close": {"status": 409, "error_code": "INVALID_STATE_TRANSITION"},
     "listing_not_found": {"status": 404, "error_code": "NOT_FOUND"},
     "listing_empty_title": {"status": 422, "error_code": "VALIDATION_FAILED"},
+    "image_upload": {"status": 200, "has_id": True, "has_url": True, "sort_order": 0},
+    "image_draft_visible_to_author": {"status": 200, "images_count": 1},
+    "image_draft_hidden_non_author": {"status": 404, "error_code": "NOT_FOUND"},
+    "image_upload_bad_type": {"status": 422, "error_code": "VALIDATION_FAILED"},
+    "image_upload_oversize": {"status": 422, "error_code": "VALIDATION_FAILED"},
+    "image_upload_nonauthor": {"status": 404, "error_code": "NOT_FOUND"},
+    "image_upload_non_draft": {"status": 409, "error_code": "INVALID_STATE_TRANSITION"},
+    "image_detail_public": {"status": 200, "images_count": 1},
+    "image_search_public": {"status": 200, "images_count": 1},
+    "image_delete_non_author": {"status": 404, "error_code": "NOT_FOUND"},
+    "image_delete": {"status": 200},
+    "image_delete_gone": {"status": 200, "images_count": 0},
     "moderation_reject": {"status": 200, "post_status": "REJECTED"},
     "moderation_reject_hidden": {"status": 200, "total": 0},
     "report_create": {"status": 200, "report_status": "SUBMITTED", "has_id": True},
@@ -263,6 +280,44 @@ def probe(base: str) -> dict:
         "error_code": r10.json().get("error", {}).get("code"),
     }
 
+    # ---- campus-verification ----
+    rv1 = httpx.post(base + "/api/v1/me/campus-verification/email", headers=headers,
+                     json={"email": "student@school.edu.cn"})
+    sig["campus_verification_send"] = {
+        "status": rv1.status_code,
+        "expires_in_seconds": rv1.json().get("data", {}).get("expiresInSeconds"),
+    }
+
+    rv2 = httpx.post(base + "/api/v1/me/campus-verification/email", headers=headers,
+                     json={"email": "not-an-email"})
+    sig["campus_verification_invalid_email"] = {
+        "status": rv2.status_code,
+        "error_code": rv2.json().get("error", {}).get("code"),
+    }
+
+    rv3 = httpx.post(base + "/api/v1/me/campus-verification/email/confirm", headers=headers,
+                     json={"email": "student@school.edu.cn", "code": "000000"})
+    sig["campus_verification_invalid_code"] = {
+        "status": rv3.status_code,
+        "error_code": rv3.json().get("error", {}).get("code"),
+    }
+
+    rv4 = httpx.post(base + "/api/v1/me/campus-verification/email/confirm", headers=headers,
+                     json={"email": "student@school.edu.cn", "code": "123456"})
+    sig["campus_verification_confirm"] = {
+        "status": rv4.status_code,
+        "verification_status": rv4.json().get("data", {}).get("verificationStatus"),
+        "verified_email": rv4.json().get("data", {}).get("verifiedEmail"),
+    }
+
+    rv5 = httpx.post(base + "/api/v1/me/campus-verification/email/confirm", headers=headers,
+                     json={"email": "new@school.edu.cn", "code": "123456"})
+    sig["campus_verification_reconfirm"] = {
+        "status": rv5.status_code,
+        "verification_status": rv5.json().get("data", {}).get("verificationStatus"),
+        "verified_email": rv5.json().get("data", {}).get("verifiedEmail"),
+    }
+
     # ---- listing ----
     token2 = httpx.post(base + "/api/v1/session/wechat", json={"code": "valid-code-2"}).json()["data"]["token"]
     headers2 = {"Authorization": "Bearer " + token2}
@@ -380,6 +435,98 @@ def probe(base: str) -> dict:
     sig["listing_empty_title"] = {
         "status": r23.status_code,
         "error_code": r23.json().get("error", {}).get("code"),
+    }
+
+    # ---- item-images ----
+    httpx.post(base + "/api/v1/me/agreement", headers=headers2)  # 确保 user2 已确认协议（幂等）
+
+    img_post = httpx.post(base + "/api/v1/posts", headers=headers, json=POST_BODY).json()["data"]["id"]
+
+    ri1 = httpx.post(base + f"/api/v1/posts/{img_post}/images", headers=headers,
+                     files={"file": ("card.jpg", b"fake-jpeg-bytes", "image/jpeg")})
+    sig["image_upload"] = {
+        "status": ri1.status_code,
+        "has_id": bool(ri1.json().get("data", {}).get("id")),
+        "has_url": bool(ri1.json().get("data", {}).get("url")),
+        "sort_order": ri1.json().get("data", {}).get("sortOrder"),
+    }
+    image_id = ri1.json()["data"]["id"]
+
+    ri2 = httpx.get(base + f"/api/v1/posts/{img_post}", headers=headers)
+    sig["image_draft_visible_to_author"] = {
+        "status": ri2.status_code,
+        "images_count": len(ri2.json().get("data", {}).get("images", [])),
+    }
+
+    ri3 = httpx.get(base + f"/api/v1/posts/{img_post}", headers=headers2)
+    sig["image_draft_hidden_non_author"] = {
+        "status": ri3.status_code,
+        "error_code": ri3.json().get("error", {}).get("code"),
+    }
+
+    ri4 = httpx.post(base + f"/api/v1/posts/{img_post}/images", headers=headers,
+                     files={"file": ("card.gif", b"gif-bytes", "image/gif")})
+    sig["image_upload_bad_type"] = {
+        "status": ri4.status_code,
+        "error_code": ri4.json().get("error", {}).get("code"),
+    }
+
+    ri5 = httpx.post(base + f"/api/v1/posts/{img_post}/images", headers=headers,
+                     files={"file": ("big.jpg", b"x" * (10 * 1024 * 1024 + 1), "image/jpeg")})
+    sig["image_upload_oversize"] = {
+        "status": ri5.status_code,
+        "error_code": ri5.json().get("error", {}).get("code"),
+    }
+
+    ri6 = httpx.post(base + f"/api/v1/posts/{img_post}/images", headers=headers2,
+                     files={"file": ("card.jpg", b"fake-jpeg-bytes", "image/jpeg")})
+    sig["image_upload_nonauthor"] = {
+        "status": ri6.status_code,
+        "error_code": ri6.json().get("error", {}).get("code"),
+    }
+
+    httpx.post(base + f"/api/v1/posts/{img_post}/publish", headers=headers)
+
+    ri7 = httpx.post(base + f"/api/v1/posts/{img_post}/images", headers=headers,
+                     files={"file": ("card.jpg", b"fake-jpeg-bytes", "image/jpeg")})
+    sig["image_upload_non_draft"] = {
+        "status": ri7.status_code,
+        "error_code": ri7.json().get("error", {}).get("code"),
+    }
+
+    ri8 = httpx.get(base + f"/api/v1/posts/{img_post}", headers=headers2)
+    sig["image_detail_public"] = {
+        "status": ri8.status_code,
+        "images_count": len(ri8.json().get("data", {}).get("images", [])),
+    }
+
+    ri9 = httpx.get(base + "/api/v1/posts", headers=headers2)
+    img_item = next((i for i in ri9.json().get("data", {}).get("items", []) if i.get("id") == img_post), None)
+    sig["image_search_public"] = {
+        "status": ri9.status_code,
+        "images_count": len(img_item.get("images", [])) if img_item else -1,
+    }
+
+    httpx.post(base + f"/api/v1/posts/{img_post}/close", headers=headers)
+
+    del_post = httpx.post(base + "/api/v1/posts", headers=headers, json=POST_BODY).json()["data"]["id"]
+    del_image = httpx.post(base + f"/api/v1/posts/{del_post}/images", headers=headers,
+                           files={"file": ("card.jpg", b"fake-jpeg-bytes", "image/jpeg")}) \
+        .json()["data"]["id"]
+
+    ri10 = httpx.delete(base + f"/api/v1/posts/{del_post}/images/{del_image}", headers=headers2)
+    sig["image_delete_non_author"] = {
+        "status": ri10.status_code,
+        "error_code": ri10.json().get("error", {}).get("code"),
+    }
+
+    ri11 = httpx.delete(base + f"/api/v1/posts/{del_post}/images/{del_image}", headers=headers)
+    sig["image_delete"] = {"status": ri11.status_code}
+
+    ri12 = httpx.get(base + f"/api/v1/posts/{del_post}", headers=headers)
+    sig["image_delete_gone"] = {
+        "status": ri12.status_code,
+        "images_count": len(ri12.json().get("data", {}).get("images", [])),
     }
 
     # ---- moderation / report ----

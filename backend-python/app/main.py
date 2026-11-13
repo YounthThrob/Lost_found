@@ -1,13 +1,16 @@
 import os
+from pathlib import Path
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
 
 from app.account.router import router as account_router
 from app.bookmark.router import router as bookmark_router
 from app.claim.router import router as claim_router
 from app.clue.router import router as clue_router
 from app.communication.router import router as communication_router
+from app.config import STORAGE_LOCAL_DIR
 from app.handover.router import router as handover_router
 from app.listing.router import router as listing_router
 from app.moderation.router import router as moderation_router
@@ -30,6 +33,11 @@ app.add_middleware(
     allow_headers=["*"],
 )
 register_exception_handlers(app)
+
+# 图片静态托管：/media/{storage_key} -> STORAGE_LOCAL_DIR/{storage_key}
+_media_dir = Path(STORAGE_LOCAL_DIR).resolve()
+_media_dir.mkdir(parents=True, exist_ok=True)
+app.mount("/media", StaticFiles(directory=str(_media_dir)), name="media")
 app.include_router(account_router, prefix="/api/v1")
 app.include_router(bookmark_router, prefix="/api/v1")
 app.include_router(listing_router, prefix="/api/v1")

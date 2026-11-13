@@ -22,6 +22,7 @@ public class SecurityConfig {
             .sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .authorizeHttpRequests(auth -> auth
                 .requestMatchers("/api/v1/session/wechat").permitAll()
+                .requestMatchers("/media/**").permitAll()
                 .anyRequest().authenticated())
             .exceptionHandling(eh -> eh.authenticationEntryPoint(entryPoint))
             .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);

@@ -67,6 +67,10 @@ pnpm-debug.log*
 logs/
 *.log
 
+# ===== 本地文件存储（图片等运行时产物）=====
+backend-java/data/
+backend-python/data/
+
 # ===== OpenSpec local working views (purely local, not shared) =====
 openspec/worksets/
 

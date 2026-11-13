@@ -8,6 +8,7 @@ public enum ErrorCode {
     ACCOUNT_RESTRICTED(403, "账户处于限制状态，禁止发布/留言/认领"),
     OPERATOR_REQUIRED(403, "无运营管理权限"),
     VALIDATION_FAILED(422, "参数校验失败"),
+    VERIFICATION_CODE_INVALID(422, "验证码错误或已过期"),
     NOT_FOUND(404, "资源不存在或无权访问"),
     INVALID_STATE_TRANSITION(409, "非法状态迁移"),
     CLAIM_DUPLICATE(409, "同一物品已存在进行中的申请"),

@@ -1,6 +1,7 @@
 package com.lostfound.bookmark;
 
 import com.lostfound.listing.ListingController;
+import com.lostfound.listing.ListingService;
 import com.lostfound.shared.Envelope;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -19,15 +20,18 @@ import java.util.Map;
 public class BookmarkController {
 
     private final BookmarkService service;
+    private final ListingService listingService;
 
-    public BookmarkController(BookmarkService service) {
+    public BookmarkController(BookmarkService service, ListingService listingService) {
         this.service = service;
+        this.listingService = listingService;
     }
 
     public record BookmarkView(String postId, String createdAt, ListingController.ItemPostView post) {
-        static BookmarkView from(BookmarkService.BookmarkEntry entry) {
+        static BookmarkView from(BookmarkService.BookmarkEntry entry, ListingService listingService) {
             return new BookmarkView(entry.postId(), entry.createdAt(),
-                ListingController.ItemPostView.from(entry.post()));
+                ListingController.ItemPostView.from(entry.post(),
+                    listingService.listImages(entry.post().id())));
         }
     }
 
@@ -38,7 +42,7 @@ public class BookmarkController {
     public Envelope.Response<BookmarkView> bookmark(Authentication authentication,
                                                     @PathVariable String postId) {
         return Envelope.ok(BookmarkView.from(
-            service.bookmark(authentication.getName(), postId)));
+            service.bookmark(authentication.getName(), postId), listingService));
     }
 
     @DeleteMapping("/posts/{postId}/bookmark")
@@ -54,7 +58,8 @@ public class BookmarkController {
                                                              @RequestParam(defaultValue = "20") int pageSize) {
         BookmarkService.BookmarkListResult result =
             service.list(authentication.getName(), page, pageSize);
-        List<BookmarkView> views = result.items().stream().map(BookmarkView::from).toList();
+        List<BookmarkView> views = result.items().stream()
+            .map(e -> BookmarkView.from(e, listingService)).toList();
         return Envelope.ok(new BookmarkListData(views, result.pagination()));
     }
 }

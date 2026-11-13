@@ -17,6 +17,25 @@ class CampusProfileUpdate(BaseModel):
     campus: str | None = None
 
 
+class EmailVerificationSend(BaseModel):
+    email: str
+
+
+class EmailVerificationConfirm(BaseModel):
+    email: str
+    code: str
+
+
+def _profile_view(user) -> dict:
+    return {
+        "school": user.school,
+        "campus": user.campus,
+        "verificationStatus": user.verification_status,
+        "verifiedEmail": user.verified_email,
+        "emailVerifiedAt": user.email_verified_at,
+    }
+
+
 @router.post("/session/wechat")
 def login(request: LoginRequest):
     token, agreement_accepted = service.login(request.code)
@@ -38,14 +57,24 @@ def confirm_agreement(user_id: str = Depends(get_current_user)):
 @router.get("/me/campus-profile")
 def get_campus_profile(user_id: str = Depends(get_current_user)):
     user = service.current_user(user_id)
-    return envelope(
-        {"school": user.school, "campus": user.campus, "verificationStatus": "SELF_DECLARED"}
-    )
+    return envelope(_profile_view(user))
 
 
 @router.put("/me/campus-profile")
 def put_campus_profile(request: CampusProfileUpdate, user_id: str = Depends(get_current_user)):
     user = service.update_campus_profile(user_id, request.school, request.campus)
-    return envelope(
-        {"school": user.school, "campus": user.campus, "verificationStatus": "SELF_DECLARED"}
-    )
+    return envelope(_profile_view(user))
+
+
+@router.post("/me/campus-verification/email")
+def send_campus_email_verification(request: EmailVerificationSend, user_id: str = Depends(get_current_user)):
+    expires_in_seconds = service.send_campus_email_verification(user_id, request.email)
+    return envelope({"expiresInSeconds": expires_in_seconds})
+
+
+@router.post("/me/campus-verification/email/confirm")
+def confirm_campus_email_verification(
+    request: EmailVerificationConfirm, user_id: str = Depends(get_current_user)
+):
+    user = service.confirm_campus_email_verification(user_id, request.email, request.code)
+    return envelope(_profile_view(user))

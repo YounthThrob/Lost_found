@@ -1,7 +1,7 @@
 from uuid import uuid4
 
 from app.abuse.rate_limiter import check as rate_limit_check
-from app.listing.store import InMemoryItemPostStore, ItemPost, now_utc
+from app.listing.store import InMemoryItemImageStore, InMemoryItemPostStore, ItemImage, ItemPost, now_utc
 from app.moderation.service import is_rejected
 from app.shared.errors import (
     INVALID_STATE_TRANSITION,
@@ -9,14 +9,20 @@ from app.shared.errors import (
     VALIDATION_FAILED,
     BusinessError,
 )
+from app.storage import LocalFileStorage
 
 _store = InMemoryItemPostStore()
+_image_store = InMemoryItemImageStore()
+_storage = LocalFileStorage()
 
 MAX_TITLE = 100
 MAX_CATEGORY = 50
 MAX_DESCRIPTION = 2000
 MAX_FIELD = 100
 MAX_PAGE_SIZE = 100
+MAX_IMAGE_BYTES = 10 * 1024 * 1024
+MAX_IMAGES_PER_POST = 9
+ALLOWED_IMAGE_TYPES = {"image/jpeg", "image/png", "image/webp"}
 
 
 def create_draft(author_id: str, *, post_type: str, category: str, title: str,
@@ -139,6 +145,47 @@ def search(keyword: str | None, post_type: str | None, category: str | None,
         "items": items,
         "pagination": {"page": page, "pageSize": page_size, "total": total, "hasMore": has_more},
     }
+
+
+def upload_image(author_id: str, post_id: str, content: bytes | None, content_type: str | None) -> ItemImage:
+    post = _require_owned(author_id, post_id)
+    if post.status != "DRAFT":
+        raise BusinessError(INVALID_STATE_TRANSITION)
+    normalized_type = (content_type or "").strip()
+    if normalized_type not in ALLOWED_IMAGE_TYPES:
+        raise BusinessError(VALIDATION_FAILED)
+    if content is None or len(content) > MAX_IMAGE_BYTES:
+        raise BusinessError(VALIDATION_FAILED)
+    sort_order = len(_image_store.list_by_post(post_id))
+    if sort_order >= MAX_IMAGES_PER_POST:
+        raise BusinessError(VALIDATION_FAILED)
+    image_id = str(uuid4())
+    storage_key = str(uuid4())
+    _storage.put(storage_key, content, normalized_type)
+    image = ItemImage(
+        id=image_id,
+        post_id=post_id,
+        storage_key=storage_key,
+        sort_order=sort_order,
+        moderation_status="PENDING",
+    )
+    _image_store.save(image)
+    return image
+
+
+def delete_image(author_id: str, post_id: str, image_id: str) -> None:
+    post = _require_owned(author_id, post_id)
+    if post.status != "DRAFT":
+        raise BusinessError(INVALID_STATE_TRANSITION)
+    image = _image_store.find_by_id(image_id)
+    if image is None or image.post_id != post_id:
+        raise BusinessError(NOT_FOUND)
+    _storage.delete(image.storage_key)
+    _image_store.delete(image_id)
+
+
+def list_images(post_id: str) -> list[ItemImage]:
+    return _image_store.list_by_post(post_id)
 
 
 def _require_owned(author_id: str, post_id: str) -> ItemPost:

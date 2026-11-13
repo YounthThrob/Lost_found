@@ -114,8 +114,8 @@ class CampusProfileTest {
                 .content("{\"school\":\"南方大学\"}"))
             .andReturn().getResponse().getContentAsString();
 
-        assertFalse(body.contains("verified"));
         assertFalse(body.contains("certified"));
+        assertFalse(body.contains("officiallyVerified"));
     }
 
     @Test

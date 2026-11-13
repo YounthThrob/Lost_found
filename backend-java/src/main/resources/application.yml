@@ -4,6 +4,10 @@ server:
 spring:
   application:
     name: backend-java
+  servlet:
+    multipart:
+      max-file-size: 50MB
+      max-request-size: 50MB
 
 # 微信登录配置。生产环境通过环境变量覆盖，密钥不进版本库。
 wechat:
@@ -19,3 +23,10 @@ jwt:
 # CORS：允许的运营后台来源（逗号分隔），生产环境通过环境变量覆盖，禁用通配来源。
 cors:
   allowed-origins: ${CORS_ORIGINS:http://localhost:5173,http://127.0.0.1:5173}
+
+# 校园邮箱核验域名白名单（逗号分隔，为空表示不限制）。
+campus-email-domains: ${CAMPUS_EMAIL_DOMAINS:}
+
+# 图片本地存储目录。
+storage:
+  local-dir: ${STORAGE_LOCAL_DIR:./data/media}

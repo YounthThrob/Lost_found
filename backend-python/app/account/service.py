@@ -1,13 +1,26 @@
+import re
+
 from app.account.store import InMemoryUserStore, UserAccount
+from app.account.verification import EmailProvider
 from app.account.wechat_client import code2session_openid
+from app.config import CAMPUS_EMAIL_DOMAINS
 from app.security.jwt import issue_token
-from app.shared.errors import ACCOUNT_RESTRICTED, AGREEMENT_NOT_ACCEPTED, VALIDATION_FAILED, BusinessError
+from app.shared.errors import (
+    ACCOUNT_RESTRICTED,
+    AGREEMENT_NOT_ACCEPTED,
+    VALIDATION_FAILED,
+    VERIFICATION_CODE_INVALID,
+    BusinessError,
+)
 
 _store = InMemoryUserStore()
+_email_provider = EmailProvider(CAMPUS_EMAIL_DOMAINS)
 
 MAX_FIELD_LENGTH = 100
 
 OPERATOR_OPENID = "openid_operator_001"
+
+_EMAIL_RE = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
 
 
 def login(code: str) -> tuple[str, bool]:
@@ -54,3 +67,28 @@ def update_campus_profile(user_id: str, school: str | None, campus: str | None) 
     ):
         raise BusinessError(VALIDATION_FAILED)
     return _store.update_campus(user_id, normalized_school, normalized_campus)
+
+
+def send_campus_email_verification(user_id: str, email: str | None) -> int:
+    return _email_provider.send(_normalize_email(email))
+
+
+def confirm_campus_email_verification(user_id: str, email: str | None, code: str | None) -> UserAccount:
+    normalized = _normalize_email(email)
+    if not code or not code.strip():
+        raise BusinessError(VALIDATION_FAILED)
+    if not _email_provider.confirm(normalized, code):
+        raise BusinessError(VERIFICATION_CODE_INVALID)
+    user = _store.verify_email(user_id, normalized)
+    if user is None:
+        raise BusinessError(VALIDATION_FAILED)
+    return user
+
+
+def _normalize_email(email: str | None) -> str:
+    if email is None:
+        raise BusinessError(VALIDATION_FAILED)
+    normalized = email.strip()
+    if len(normalized) > MAX_FIELD_LENGTH or not _EMAIL_RE.match(normalized):
+        raise BusinessError(VALIDATION_FAILED)
+    return normalized

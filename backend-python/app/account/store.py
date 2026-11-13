@@ -16,6 +16,9 @@ class UserAccount:
     school: str | None = None
     campus: str | None = None
     role: str = "USER"
+    verification_status: str = "SELF_DECLARED"
+    verified_email: str | None = None
+    email_verified_at: str | None = None
 
     @property
     def agreement_accepted(self) -> bool:
@@ -59,6 +62,9 @@ class InMemoryUserStore:
             school=user.school,
             campus=user.campus,
             role=user.role,
+            verification_status=user.verification_status,
+            verified_email=user.verified_email,
+            email_verified_at=user.email_verified_at,
         )
         self._by_openid[user.openid] = updated
         return updated
@@ -75,6 +81,28 @@ class InMemoryUserStore:
             school=school,
             campus=campus,
             role=user.role,
+            verification_status=user.verification_status,
+            verified_email=user.verified_email,
+            email_verified_at=user.email_verified_at,
+        )
+        self._by_openid[user.openid] = updated
+        return updated
+
+    def verify_email(self, user_id: str, email: str) -> UserAccount | None:
+        user = self.find_by_id(user_id)
+        if user is None:
+            return None
+        updated = UserAccount(
+            id=user.id,
+            openid=user.openid,
+            status=user.status,
+            agreement_accepted_at=user.agreement_accepted_at,
+            school=user.school,
+            campus=user.campus,
+            role=user.role,
+            verification_status="EMAIL_VERIFIED",
+            verified_email=email,
+            email_verified_at=_now(),
         )
         self._by_openid[user.openid] = updated
         return updated
@@ -97,6 +125,9 @@ class InMemoryUserStore:
             school=user.school,
             campus=user.campus,
             role=user.role,
+            verification_status=user.verification_status,
+            verified_email=user.verified_email,
+            email_verified_at=user.email_verified_at,
         )
         self._by_openid[user.openid] = updated
         return updated

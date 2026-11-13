@@ -122,6 +122,68 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
+  /me/campus-verification/email:
+    post:
+      summary: 发起校园邮箱核验（发送验证码）
+      operationId: sendCampusEmailVerification
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/EmailVerificationSend"
+      responses:
+        "200":
+          description: 验证码已发送（mock）
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/EmailVerificationSendResponse"
+        "401":
+          description: 会话无效或已过期
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "422":
+          description: 邮箱格式非法或域名不允许
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  /me/campus-verification/email/confirm:
+    post:
+      summary: 确认验证码并完成校园邮箱核验
+      operationId: confirmCampusEmailVerification
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/EmailVerificationConfirm"
+      responses:
+        "200":
+          description: 核验成功，返回核验后的校园档案
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CampusProfileResponse"
+        "401":
+          description: 会话无效或已过期
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "422":
+          description: 验证码错误或已过期（VERIFICATION_CODE_INVALID）或参数校验失败
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
   /posts:
     get:
       summary: 搜索与筛选已发布信息
@@ -307,6 +369,116 @@ paths:
                 $ref: "#/components/schemas/ErrorResponse"
         "422":
           description: 参数校验失败
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  /posts/{postId}/images:
+    post:
+      summary: 为草稿信息上传图片
+      operationId: uploadPostImage
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: postId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required:
+                - file
+              properties:
+                file:
+                  type: string
+                  format: binary
+                  description: 图片文件（jpeg/png/webp，≤10MB）
+      responses:
+        "200":
+          description: 上传成功，返回图片元数据
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ItemImageResponse"
+        "401":
+          description: 会话无效或已过期
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "403":
+          description: 未确认用户协议
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: 信息不存在或非作者
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "409":
+          description: 非法状态迁移（非草稿不可上传）
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "422":
+          description: 图片类型/大小/数量校验失败
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  /posts/{postId}/images/{imageId}:
+    delete:
+      summary: 删除草稿信息中的图片
+      operationId: deletePostImage
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: postId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: imageId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: 删除成功
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/EmptyResponse"
+        "401":
+          description: 会话无效或已过期
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "403":
+          description: 未确认用户协议
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: 信息或图片不存在，或非作者
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "409":
+          description: 非法状态迁移（非草稿不可删除）
           content:
             application/json:
               schema:
@@ -1710,6 +1882,83 @@ components:
               type: string
               enum:
                 - SELF_DECLARED
+                - EMAIL_VERIFIED
+            verifiedEmail:
+              type: ["string", "null"]
+              description: 已核验校园邮箱（未核验为 null）
+            emailVerifiedAt:
+              type: ["string", "null"]
+              format: date-time
+              description: 邮箱核验完成时间（RFC3339 UTC，未核验为 null）
+        requestId:
+          type: string
+        timestamp:
+          type: string
+          format: date-time
+    EmailVerificationSend:
+      type: object
+      required:
+        - email
+      properties:
+        email:
+          type: string
+          description: 校园邮箱（非空，≤100 字符，符合邮箱格式）
+    EmailVerificationSendResponse:
+      type: object
+      required:
+        - data
+        - requestId
+        - timestamp
+      properties:
+        data:
+          type: object
+          required:
+            - expiresInSeconds
+          properties:
+            expiresInSeconds:
+              type: integer
+              description: 验证码有效期（秒）
+        requestId:
+          type: string
+        timestamp:
+          type: string
+          format: date-time
+    EmailVerificationConfirm:
+      type: object
+      required:
+        - email
+        - code
+      properties:
+        email:
+          type: string
+          description: 待核验的校园邮箱
+        code:
+          type: string
+          description: 邮箱收到的验证码
+    ItemImage:
+      type: object
+      required:
+        - id
+        - url
+        - sortOrder
+      properties:
+        id:
+          type: string
+        url:
+          type: string
+          description: 相对路径图片地址（/media/{storage_key}）
+        sortOrder:
+          type: integer
+          description: 图片排序序号
+    ItemImageResponse:
+      type: object
+      required:
+        - data
+        - requestId
+        - timestamp
+      properties:
+        data:
+          $ref: "#/components/schemas/ItemImage"
         requestId:
           type: string
         timestamp:
@@ -1783,6 +2032,7 @@ components:
         - authorId
         - createdAt
         - updatedAt
+        - images
       properties:
         id:
           type: string
@@ -1812,6 +2062,10 @@ components:
         updatedAt:
           type: string
           format: date-time
+        images:
+          type: array
+          items:
+            $ref: "#/components/schemas/ItemImage"
     Pagination:
       type: object
       required:
@@ -2508,6 +2762,21 @@ components:
       properties:
         data:
           $ref: "#/components/schemas/HandoverView"
+        requestId:
+          type: string
+        timestamp:
+          type: string
+          format: date-time
+    EmptyResponse:
+      type: object
+      required:
+        - data
+        - requestId
+        - timestamp
+      properties:
+        data:
+          type: object
+          additionalProperties: false
         requestId:
           type: string
         timestamp:

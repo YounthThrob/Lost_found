@@ -27,7 +27,14 @@ public class AccountController {
     public record CampusProfileUpdate(String school, String campus) {
     }
 
-    public record CampusProfileView(String school, String campus, String verificationStatus) {
+    public record CampusProfileView(String school, String campus, String verificationStatus,
+                                    String verifiedEmail, String emailVerifiedAt) {
+    }
+
+    public record EmailVerificationSend(String email) {
+    }
+
+    public record EmailVerificationConfirm(String email, String code) {
     }
 
     @PostMapping("/session/wechat")
@@ -56,7 +63,7 @@ public class AccountController {
     @GetMapping("/me/campus-profile")
     public Envelope.Response<CampusProfileView> getCampusProfile(Authentication authentication) {
         UserAccount user = accountService.currentUser(authentication.getName());
-        return Envelope.ok(new CampusProfileView(user.school(), user.campus(), "SELF_DECLARED"));
+        return Envelope.ok(profileView(user));
     }
 
     @PutMapping("/me/campus-profile")
@@ -64,6 +71,27 @@ public class AccountController {
                                                                  @RequestBody CampusProfileUpdate request) {
         UserAccount user = accountService.updateCampusProfile(
             authentication.getName(), request.school(), request.campus());
-        return Envelope.ok(new CampusProfileView(user.school(), user.campus(), "SELF_DECLARED"));
+        return Envelope.ok(profileView(user));
+    }
+
+    @PostMapping("/me/campus-verification/email")
+    public Envelope.Response<Map<String, Object>> sendCampusEmailVerification(
+            Authentication authentication, @RequestBody EmailVerificationSend request) {
+        int expiresInSeconds = accountService.sendCampusEmailVerification(
+            authentication.getName(), request.email());
+        return Envelope.ok(Map.of("expiresInSeconds", expiresInSeconds));
+    }
+
+    @PostMapping("/me/campus-verification/email/confirm")
+    public Envelope.Response<CampusProfileView> confirmCampusEmailVerification(
+            Authentication authentication, @RequestBody EmailVerificationConfirm request) {
+        UserAccount user = accountService.confirmCampusEmailVerification(
+            authentication.getName(), request.email(), request.code());
+        return Envelope.ok(profileView(user));
+    }
+
+    private CampusProfileView profileView(UserAccount user) {
+        return new CampusProfileView(user.school(), user.campus(), user.verificationStatus(),
+            user.verifiedEmail(), user.emailVerifiedAt());
     }
 }

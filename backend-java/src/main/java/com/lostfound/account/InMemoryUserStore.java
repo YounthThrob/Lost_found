@@ -22,7 +22,8 @@ public class InMemoryUserStore {
 
     public UserAccount findByOpenid(String openid, String role) {
         return byOpenid.computeIfAbsent(openid,
-            o -> new UserAccount(UUID.randomUUID().toString(), o, "ACTIVE", null, null, null, role));
+            o -> new UserAccount(UUID.randomUUID().toString(), o, "ACTIVE", null, null, null, role,
+                "SELF_DECLARED", null, null));
     }
 
     public UserAccount findById(String id) {
@@ -41,7 +42,8 @@ public class InMemoryUserStore {
             return user;
         }
         UserAccount updated = new UserAccount(user.id(), user.openid(), user.status(),
-            Instant.now().toString(), user.school(), user.campus(), user.role());
+            Instant.now().toString(), user.school(), user.campus(), user.role(),
+            user.verificationStatus(), user.verifiedEmail(), user.emailVerifiedAt());
         byOpenid.put(user.openid(), updated);
         return updated;
     }
@@ -52,7 +54,20 @@ public class InMemoryUserStore {
             return null;
         }
         UserAccount updated = new UserAccount(user.id(), user.openid(), user.status(),
-            user.agreementAcceptedAt(), school, campus, user.role());
+            user.agreementAcceptedAt(), school, campus, user.role(),
+            user.verificationStatus(), user.verifiedEmail(), user.emailVerifiedAt());
+        byOpenid.put(user.openid(), updated);
+        return updated;
+    }
+
+    public UserAccount verifyEmail(String userId, String email) {
+        UserAccount user = findById(userId);
+        if (user == null) {
+            return null;
+        }
+        UserAccount updated = new UserAccount(user.id(), user.openid(), user.status(),
+            user.agreementAcceptedAt(), user.school(), user.campus(), user.role(),
+            "EMAIL_VERIFIED", email, Instant.now().toString());
         byOpenid.put(user.openid(), updated);
         return updated;
     }
@@ -71,7 +86,8 @@ public class InMemoryUserStore {
             return null;
         }
         UserAccount updated = new UserAccount(user.id(), user.openid(), status,
-            user.agreementAcceptedAt(), user.school(), user.campus(), user.role());
+            user.agreementAcceptedAt(), user.school(), user.campus(), user.role(),
+            user.verificationStatus(), user.verifiedEmail(), user.emailVerifiedAt());
         byOpenid.put(user.openid(), updated);
         return updated;
     }

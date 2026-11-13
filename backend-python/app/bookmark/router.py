@@ -1,6 +1,7 @@
 from fastapi import APIRouter, Depends, Query
 
 from app.bookmark import service
+from app.listing import service as listing_service
 from app.security.deps import get_current_user
 from app.shared.errors import envelope
 
@@ -21,6 +22,10 @@ def _post_view(post) -> dict:
         "authorId": post.author_id,
         "createdAt": post.created_at,
         "updatedAt": post.updated_at,
+        "images": [
+            {"id": i.id, "url": "/media/" + i.storage_key, "sortOrder": i.sort_order}
+            for i in listing_service.list_images(post.id)
+        ],
     }
 
 

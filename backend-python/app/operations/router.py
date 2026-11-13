@@ -1,6 +1,7 @@
 from fastapi import APIRouter, Depends, Query
 from pydantic import BaseModel
 
+from app.listing import service as listing_service
 from app.operations import service
 from app.operations.deps import require_operator
 from app.shared.errors import envelope
@@ -26,6 +27,10 @@ def _post_view(post) -> dict:
         "authorId": post.author_id,
         "createdAt": post.created_at,
         "updatedAt": post.updated_at,
+        "images": [
+            {"id": i.id, "url": "/media/" + i.storage_key, "sortOrder": i.sort_order}
+            for i in listing_service.list_images(post.id)
+        ],
     }
 
 
