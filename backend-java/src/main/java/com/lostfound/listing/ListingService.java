@@ -8,6 +8,8 @@ import com.lostfound.storage.Storage;
 import org.springframework.stereotype.Service;
 
 import java.time.Instant;
+import java.time.LocalDate;
+import java.time.ZoneId;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
@@ -27,6 +29,9 @@ public class ListingService {
     }
 
     public record SearchResult(List<ItemPost> items, Pagination pagination) {
+    }
+
+    public record Stats(int foundCount, int lostCount, int completedToday) {
     }
 
     private static final int MAX_TITLE = 100;
@@ -161,6 +166,24 @@ public class ListingService {
         List<ItemPost> items = from >= total ? List.of() : all.subList(from, Math.min(from + pageSize, total));
         boolean hasMore = from + pageSize < total;
         return new SearchResult(items, new Pagination(page, pageSize, total, hasMore));
+    }
+
+    /** 广场统计：招领/寻物公开数量与今日（北京时间 UTC+8）完成交接数量。 */
+    public Stats stats() {
+        int foundCount = (int) store.listVisible().stream()
+            .filter(p -> "FOUND".equals(p.type()))
+            .count();
+        int lostCount = (int) store.listVisible().stream()
+            .filter(p -> "LOST".equals(p.type()))
+            .count();
+        ZoneId zone = ZoneId.of("Asia/Shanghai");
+        LocalDate today = LocalDate.now(zone);
+        int completedToday = (int) store.listAll().stream()
+            .filter(p -> "COMPLETED".equals(p.status()))
+            .filter(p -> p.updatedAt() != null
+                && Instant.parse(p.updatedAt()).atZone(zone).toLocalDate().equals(today))
+            .count();
+        return new Stats(foundCount, lostCount, completedToday);
     }
 
     public ItemImage uploadImage(String authorId, String postId, byte[] content, String contentType) {

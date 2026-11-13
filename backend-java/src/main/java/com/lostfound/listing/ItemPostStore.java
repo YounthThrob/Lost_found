@@ -30,6 +30,14 @@ public class ItemPostStore {
             .toList();
     }
 
+    /** 返回全部信息（不分状态），供统计等内部用途。 */
+    public List<ItemPost> listAll() {
+        return byId.values().stream()
+            .sorted(Comparator.comparing(ItemPost::createdAt, Comparator.reverseOrder())
+                .thenComparing(ItemPost::id))
+            .toList();
+    }
+
     /** 返回某作者的全部信息（不分状态），按创建时间倒序。 */
     public List<ItemPost> listByAuthor(String authorId) {
         return byId.values().stream()

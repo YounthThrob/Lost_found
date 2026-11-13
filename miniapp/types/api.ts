@@ -63,6 +63,12 @@ export interface ItemPostListData {
   pagination: Pagination;
 }
 
+export interface StatsData {
+  foundCount: number;
+  lostCount: number;
+  completedToday: number;
+}
+
 export interface MeView {
   id: string;
   status: string;

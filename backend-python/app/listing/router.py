@@ -138,3 +138,8 @@ def search_posts(
         "items": [_view(p) for p in result["items"]],
         "pagination": result["pagination"],
     })
+
+
+@router.get("/stats")
+def get_stats(user_id: str = Depends(get_current_user)):
+    return envelope(service.stats())

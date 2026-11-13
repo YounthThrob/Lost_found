@@ -1,3 +1,4 @@
+from datetime import datetime, timedelta, timezone
 from uuid import uuid4
 
 from app.abuse.rate_limiter import check as rate_limit_check
@@ -144,6 +145,33 @@ def search(keyword: str | None, post_type: str | None, category: str | None,
     return {
         "items": items,
         "pagination": {"page": page, "pageSize": page_size, "total": total, "hasMore": has_more},
+    }
+
+
+_SHANGHAI = timezone(timedelta(hours=8))
+
+
+def _is_today_beijing(iso_utc: str | None) -> bool:
+    if not iso_utc:
+        return False
+    try:
+        dt = datetime.fromisoformat(iso_utc.replace("Z", "+00:00"))
+    except ValueError:
+        return False
+    return dt.astimezone(_SHANGHAI).date() == datetime.now(timezone.utc).astimezone(_SHANGHAI).date()
+
+
+def stats() -> dict:
+    """广场统计：招领/寻物公开数量与今日（北京时间 UTC+8）完成交接数量。"""
+    visible = _store.list_visible()
+    completed_today = sum(
+        1 for p in _store.list_all()
+        if p.status == "COMPLETED" and _is_today_beijing(p.updated_at)
+    )
+    return {
+        "foundCount": sum(1 for p in visible if p.type == "FOUND"),
+        "lostCount": sum(1 for p in visible if p.type == "LOST"),
+        "completedToday": completed_today,
     }
 
 

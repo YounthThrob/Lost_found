@@ -34,7 +34,7 @@
       <view class="atlas-kicker">FIELD NOTE / 11·13</view>
       <view class="atlas-lead">今天，有</view>
       <view class="atlas-number-row">
-        <text class="atlas-number">12</text>
+        <text class="atlas-number">{{completedToday}}</text>
         <text class="atlas-number-copy">件物品找到方向</text>
       </view>
       <view class="atlas-note">每一条微小线索，都可能让归还发生</view>
@@ -51,7 +51,7 @@
     <view wx:for="{{typeTabs}}" wx:key="key" class="type-option {{activeType === item.key ? 'active' : ''}}" data-type="{{item.key}}" bindtap="switchType">
       <view class="type-dot {{item.key === 'FOUND' ? 'found' : 'lost'}}"></view>
       <text class="type-label">{{item.label}}</text>
-      <text class="type-count">{{item.key === activeType ? total : '—'}}</text>
+      <text class="type-count">{{item.key === 'FOUND' ? foundCount : lostCount}}</text>
     </view>
   </view>
 

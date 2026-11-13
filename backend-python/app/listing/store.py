@@ -72,6 +72,9 @@ class InMemoryItemPostStore:
         posts.sort(key=lambda p: (p.created_at, p.id), reverse=True)
         return posts
 
+    def list_all(self) -> list[ItemPost]:
+        return list(self._by_id.values())
+
     def list_by_author(self, author_id: str) -> list[ItemPost]:
         posts = [p for p in self._by_id.values() if p.author_id == author_id]
         posts.sort(key=lambda p: p.id)

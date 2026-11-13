@@ -127,6 +127,13 @@ EXPECTED = {
     "handover_both_confirm": {"status": 200, "handover_status": "COMPLETED"},
     "handover_claim_completed": {"status": 200, "claim_status": "COMPLETED"},
     "handover_post_completed": {"status": 200, "post_status": "COMPLETED"},
+    "stats": {
+        "status": 200,
+        "found_positive": True,
+        "lost_positive": True,
+        "completed_positive": True,
+        "keys": ["completedToday", "foundCount", "lostCount"],
+    },
     "handover_cancel": {"status": 200, "handover_status": "CANCELLED"},
     "handover_cancel_claim": {"status": 200, "claim_status": "CANCELLED"},
     "handover_cancel_post_published": {"status": 200, "post_status": "PUBLISHED"},
@@ -947,6 +954,17 @@ def probe(base: str) -> dict:
     sig["handover_post_completed"] = {
         "status": r63.status_code,
         "post_status": r63.json().get("data", {}).get("status"),
+    }
+
+    # ---- 首页统计 ----
+    rs1 = httpx.get(base + "/api/v1/stats", headers=headers)
+    stats_data = rs1.json().get("data", {})
+    sig["stats"] = {
+        "status": rs1.status_code,
+        "found_positive": stats_data.get("foundCount", 0) > 0,
+        "lost_positive": stats_data.get("lostCount", 0) > 0,
+        "completed_positive": stats_data.get("completedToday", 0) > 0,
+        "keys": sorted(stats_data.keys()),
     }
 
     hp2_id, hc3_id = new_accepted_claim(headers2)

@@ -135,4 +135,9 @@ public class ListingController {
         List<ItemPostView> views = result.items().stream().map(this::view).toList();
         return Envelope.ok(new ItemPostListData(views, result.pagination()));
     }
+
+    @GetMapping("/stats")
+    public Envelope.Response<ListingService.Stats> stats(Authentication authentication) {
+        return Envelope.ok(listingService.stats());
+    }
 }

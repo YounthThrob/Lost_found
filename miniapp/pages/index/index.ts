@@ -1,7 +1,7 @@
 import { request } from "../../utils/request";
 import { postStatus } from "../../utils/status";
 import { formatTime, mediaUrl } from "../../utils/format";
-import type { ItemPostListData, ItemPostView } from "../../types/api";
+import type { ItemPostListData, ItemPostView, StatsData } from "../../types/api";
 
 interface IndexItem extends ItemPostView {
   statusLabel: string;
@@ -33,15 +33,19 @@ Page({
     total: 0,
     hasMore: false,
     loading: false,
+    foundCount: 0,
+    lostCount: 0,
+    completedToday: 0,
   },
 
   onShow() {
     wx.hideTabBar({ animation: false });
     this.reload();
+    this.loadStats();
   },
 
   onPullDownRefresh() {
-    this.reload().finally(() => wx.stopPullDownRefresh());
+    Promise.all([this.reload(), this.loadStats()]).finally(() => wx.stopPullDownRefresh());
   },
 
   onReachBottom() {
@@ -53,6 +57,21 @@ Page({
   async reload() {
     this.setData({ page: 1, items: [] });
     await this.load(1);
+  },
+
+  async loadStats() {
+    try {
+      const stats = await request<StatsData>({ url: "/stats" });
+      this.setData({
+        foundCount: stats.foundCount,
+        lostCount: stats.lostCount,
+        completedToday: stats.completedToday,
+      });
+    } catch (e: any) {
+      if (e.code !== "NETWORK") {
+        wx.showToast({ title: e.message, icon: "none" });
+      }
+    }
   },
 
   decorate(it: ItemPostView): IndexItem {

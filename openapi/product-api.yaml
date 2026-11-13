@@ -288,6 +288,25 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
+  /stats:
+    get:
+      summary: 查询广场统计（招领/寻物数量与今日已交接数量）
+      operationId: getStats
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: 公开统计（招领数、寻物数、今日找到方向数）
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StatsResponse"
+        "401":
+          description: 会话无效或已过期
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
   /posts/{postId}:
     get:
       summary: 查看信息详情
@@ -2117,6 +2136,34 @@ components:
       properties:
         data:
           $ref: "#/components/schemas/ItemPostListData"
+        requestId:
+          type: string
+        timestamp:
+          type: string
+          format: date-time
+    StatsResponse:
+      type: object
+      required:
+        - data
+        - requestId
+        - timestamp
+      properties:
+        data:
+          type: object
+          required:
+            - foundCount
+            - lostCount
+            - completedToday
+          properties:
+            foundCount:
+              type: integer
+              description: 公开可见的招领信息数量（PUBLISHED/VERIFYING）
+            lostCount:
+              type: integer
+              description: 公开可见的寻物信息数量（PUBLISHED/VERIFYING）
+            completedToday:
+              type: integer
+              description: 今日（北京时间 UTC+8）完成交接的物品数量（状态为 COMPLETED）
         requestId:
           type: string
         timestamp:
