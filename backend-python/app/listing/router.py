@@ -3,7 +3,7 @@ from pydantic import BaseModel
 
 from app.account.deps import require_agreement
 from app.listing import service
-from app.security.deps import get_current_user
+from app.security.deps import get_current_user, get_optional_user
 from app.shared.errors import envelope
 
 router = APIRouter()
@@ -105,8 +105,8 @@ def delete_image(post_id: str, image_id: str, user_id: str = Depends(require_agr
 
 
 @router.get("/posts/{post_id}")
-def get_post(post_id: str, user_id: str = Depends(get_current_user)):
-    return envelope(_view(service.get_detail(user_id, post_id)))
+def get_post(post_id: str, viewer_id: str | None = Depends(get_optional_user)):
+    return envelope(_view(service.get_detail(viewer_id, post_id)))
 
 
 @router.get("/me/posts")
@@ -131,7 +131,6 @@ def search_posts(
     campus: str | None = Query(None),
     page: int = Query(1, ge=1),
     page_size: int = Query(20, ge=1, le=100, alias="pageSize"),
-    user_id: str = Depends(get_current_user),
 ):
     result = service.search(keyword, post_type, category, school, campus, page, page_size)
     return envelope({
@@ -141,5 +140,5 @@ def search_posts(
 
 
 @router.get("/stats")
-def get_stats(user_id: str = Depends(get_current_user)):
+def get_stats():
     return envelope(service.stats())

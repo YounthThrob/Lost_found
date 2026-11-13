@@ -12,13 +12,27 @@ _bearer = HTTPBearer(auto_error=False)
 def get_current_user(
     credentials: HTTPAuthorizationCredentials | None = Depends(_bearer),
 ) -> str:
-    if credentials is None:
+    user_id = _resolve_user(credentials)
+    if user_id is None:
         raise BusinessError(SESSION_EXPIRED)
+    return user_id
+
+
+def get_optional_user(
+    credentials: HTTPAuthorizationCredentials | None = Depends(_bearer),
+) -> str | None:
+    """可选登录：缺失或无效/过期令牌时返回 None（匿名），而非抛 401。"""
+    return _resolve_user(credentials)
+
+
+def _resolve_user(credentials: HTTPAuthorizationCredentials | None) -> str | None:
+    if credentials is None:
+        return None
     try:
         user_id = parse_subject(credentials.credentials)
     except pyjwt.PyJWTError:
-        raise BusinessError(SESSION_EXPIRED)
+        return None
     # 会话有效性：JWT 签名与有效期之外，还需确认用户仍存在（内存库重建/用户注销后应判定为会话失效）。
     if account_service.current_user(user_id) is None:
-        raise BusinessError(SESSION_EXPIRED)
+        return None
     return user_id

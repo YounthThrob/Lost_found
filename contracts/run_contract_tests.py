@@ -134,6 +134,11 @@ EXPECTED = {
         "completed_positive": True,
         "keys": ["completedToday", "foundCount", "lostCount"],
     },
+    "public_search": {"status": 200, "has_items": True},
+    "public_detail": {"status": 200, "post_status": "PUBLISHED"},
+    "public_stats": {"status": 200, "keys": ["completedToday", "foundCount", "lostCount"]},
+    "public_detail_invalid_token": {"status": 200, "post_status": "PUBLISHED"},
+    "write_unauthorized": {"status": 401, "error_code": "SESSION_EXPIRED"},
     "handover_cancel": {"status": 200, "handover_status": "CANCELLED"},
     "handover_cancel_claim": {"status": 200, "claim_status": "CANCELLED"},
     "handover_cancel_post_published": {"status": 200, "post_status": "PUBLISHED"},
@@ -965,6 +970,43 @@ def probe(base: str) -> dict:
         "lost_positive": stats_data.get("lostCount", 0) > 0,
         "completed_positive": stats_data.get("completedToday", 0) > 0,
         "keys": sorted(stats_data.keys()),
+    }
+
+    # ---- 公开浏览与可选登录 ----
+    pub_id = httpx.post(base + "/api/v1/posts", headers=headers, json=FOUND_BODY).json()["data"]["id"]
+    httpx.post(base + f"/api/v1/posts/{pub_id}/publish", headers=headers)
+
+    rpub1 = httpx.get(base + "/api/v1/posts")
+    sig["public_search"] = {
+        "status": rpub1.status_code,
+        "has_items": len(rpub1.json().get("data", {}).get("items", [])) > 0,
+    }
+
+    rpub2 = httpx.get(base + f"/api/v1/posts/{pub_id}")
+    sig["public_detail"] = {
+        "status": rpub2.status_code,
+        "post_status": rpub2.json().get("data", {}).get("status"),
+    }
+
+    rpub3 = httpx.get(base + "/api/v1/stats")
+    sig["public_stats"] = {
+        "status": rpub3.status_code,
+        "keys": sorted(rpub3.json().get("data", {}).keys()),
+    }
+
+    # 无效/过期令牌按匿名处理
+    bad_headers = {"Authorization": "Bearer invalid-token"}
+    rpub4 = httpx.get(base + f"/api/v1/posts/{pub_id}", headers=bad_headers)
+    sig["public_detail_invalid_token"] = {
+        "status": rpub4.status_code,
+        "post_status": rpub4.json().get("data", {}).get("status"),
+    }
+
+    # 写操作仍需登录
+    rpub5 = httpx.post(base + "/api/v1/posts", json=POST_BODY)
+    sig["write_unauthorized"] = {
+        "status": rpub5.status_code,
+        "error_code": rpub5.json().get("error", {}).get("code"),
     }
 
     hp2_id, hc3_id = new_accepted_claim(headers2)

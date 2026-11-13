@@ -116,7 +116,7 @@ def list_my_posts(author_id: str, page: int, page_size: int) -> dict:
     }
 
 
-def get_detail(viewer_id: str, post_id: str) -> ItemPost:
+def get_detail(viewer_id: str | None, post_id: str) -> ItemPost:
     post = _store.find_by_id(post_id)
     if post is None:
         raise BusinessError(NOT_FOUND)

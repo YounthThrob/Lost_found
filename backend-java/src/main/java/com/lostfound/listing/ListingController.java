@@ -87,7 +87,8 @@ public class ListingController {
     @GetMapping("/posts/{postId}")
     public Envelope.Response<ItemPostView> getPost(Authentication authentication,
                                                    @PathVariable String postId) {
-        return Envelope.ok(view(listingService.getDetail(authentication.getName(), postId)));
+        String viewerId = authentication == null ? null : authentication.getName();
+        return Envelope.ok(view(listingService.getDetail(viewerId, postId)));
     }
 
     @PostMapping("/posts/{postId}/images")
@@ -111,8 +112,7 @@ public class ListingController {
     }
 
     @GetMapping("/posts")
-    public Envelope.Response<ItemPostListData> searchPosts(Authentication authentication,
-                                                           @RequestParam(required = false) String keyword,
+    public Envelope.Response<ItemPostListData> searchPosts(@RequestParam(required = false) String keyword,
                                                            @RequestParam(required = false) String type,
                                                            @RequestParam(required = false) String category,
                                                            @RequestParam(required = false) String school,
@@ -137,7 +137,7 @@ public class ListingController {
     }
 
     @GetMapping("/stats")
-    public Envelope.Response<ListingService.Stats> stats(Authentication authentication) {
+    public Envelope.Response<ListingService.Stats> stats() {
         return Envelope.ok(listingService.stats());
     }
 }
