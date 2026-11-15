@@ -12,7 +12,7 @@ React 18 + Vite + TypeScript + Ant Design，消费 `openapi/product-api.yaml` �
 
 1. `npm install`
 2. 确认 `src/config.ts` 的 `API_BASE` 指向已启动的后端（Java 默认 8080，Python 默认 8000）。
-3. 登录：开发环境使用 mock 凭证 `operator-code`（后端 code2session 映射到运营账号）。
+3. 登录：使用运营账号密码（默认 `admin` / `admin123`，生产通过后端环境变量 `OPERATOR_USERNAME` / `OPERATOR_PASSWORD` 覆盖）。
 4. 启动开发服务器或构建：
 
 ```bash

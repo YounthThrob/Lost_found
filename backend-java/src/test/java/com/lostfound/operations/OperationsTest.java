@@ -1,6 +1,7 @@
 package com.lostfound.operations;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.lostfound.account.AccountService;
 import com.lostfound.account.InMemoryUserStore;
 import com.lostfound.listing.ItemPostStore;
 import com.lostfound.moderation.ReportStore;
@@ -35,6 +36,9 @@ class OperationsTest {
     private InMemoryUserStore userStore;
 
     @Autowired
+    private AccountService accountService;
+
+    @Autowired
     private ItemPostStore postStore;
 
     @Autowired
@@ -46,6 +50,7 @@ class OperationsTest {
     @BeforeEach
     void reset() {
         userStore.clear();
+        accountService.seedOperator();
         postStore.clear();
         reportStore.clear();
         auditStore.clear();
@@ -56,6 +61,15 @@ class OperationsTest {
                 mockMvc.perform(post("/api/v1/session/wechat")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"code\":\"" + code + "\"}"))
+                    .andReturn().getResponse().getContentAsString())
+            .path("data").path("token").asText();
+    }
+
+    private String operatorToken() throws Exception {
+        return objectMapper.readTree(
+                mockMvc.perform(post("/api/v1/session/operator")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"username\":\"admin\",\"password\":\"admin123\"}"))
                     .andReturn().getResponse().getContentAsString())
             .path("data").path("token").asText();
     }
@@ -105,7 +119,7 @@ class OperationsTest {
 
     @Test
     void operator_removes_published_post_and_hides_from_search() throws Exception {
-        String operator = loginToken("operator-code");
+        String operator = operatorToken();
         String owner = confirmedToken("valid-code");
         String postId = createPublishedPost(owner);
 
@@ -121,7 +135,7 @@ class OperationsTest {
 
     @Test
     void operator_remove_nonexistent_returns_404() throws Exception {
-        String operator = loginToken("operator-code");
+        String operator = operatorToken();
 
         mockMvc.perform(post("/api/v1/admin/posts/nonexistent/remove").header("Authorization", bearer(operator))
                 .contentType(MediaType.APPLICATION_JSON).content("{\"reason\":\"x\"}"))
@@ -131,7 +145,7 @@ class OperationsTest {
 
     @Test
     void operator_remove_nonpublic_returns_409() throws Exception {
-        String operator = loginToken("operator-code");
+        String operator = operatorToken();
         String owner = confirmedToken("valid-code");
         String postId = createPublishedPost(owner);
         mockMvc.perform(post("/api/v1/posts/" + postId + "/close").header("Authorization", bearer(owner)))
@@ -145,7 +159,7 @@ class OperationsTest {
 
     @Test
     void operator_restrict_then_blocked_from_publish_and_unrestrict() throws Exception {
-        String operator = loginToken("operator-code");
+        String operator = operatorToken();
         String target = confirmedToken("valid-code-2");
         String targetId = userId(target);
 
@@ -173,7 +187,7 @@ class OperationsTest {
 
     @Test
     void operator_restrict_nonexistent_returns_404() throws Exception {
-        String operator = loginToken("operator-code");
+        String operator = operatorToken();
 
         mockMvc.perform(post("/api/v1/admin/users/nonexistent/restrict")
                 .header("Authorization", bearer(operator))
@@ -184,7 +198,7 @@ class OperationsTest {
 
     @Test
     void operator_list_all_reports() throws Exception {
-        String operator = loginToken("operator-code");
+        String operator = operatorToken();
         String reporter = confirmedToken("valid-code-2");
         mockMvc.perform(post("/api/v1/reports").header("Authorization", bearer(reporter))
                 .contentType(MediaType.APPLICATION_JSON)
@@ -199,7 +213,7 @@ class OperationsTest {
 
     @Test
     void operator_actions_write_audit_events() throws Exception {
-        String operator = loginToken("operator-code");
+        String operator = operatorToken();
         String owner = confirmedToken("valid-code");
         String postId = createPublishedPost(owner);
 
@@ -217,7 +231,7 @@ class OperationsTest {
 
     @Test
     void operator_action_empty_reason_returns_422() throws Exception {
-        String operator = loginToken("operator-code");
+        String operator = operatorToken();
 
         mockMvc.perform(post("/api/v1/admin/users/some-user/restrict")
                 .header("Authorization", bearer(operator))

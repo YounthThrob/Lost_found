@@ -1,16 +1,19 @@
 import re
 from uuid import uuid4
 
+import bcrypt
+
 from app.account.store import InMemoryUserStore, UserAccount
 from app.account.verification import EmailProvider
 from app.account.wechat_client import code2session_openid
-from app.config import CAMPUS_EMAIL_DOMAINS
+from app.config import CAMPUS_EMAIL_DOMAINS, OPERATOR_PASSWORD, OPERATOR_USERNAME
 from app.directory import service as directory_service
 from app.security.jwt import issue_token
 from app.storage import LocalFileStorage
 from app.shared.errors import (
     ACCOUNT_RESTRICTED,
     AGREEMENT_NOT_ACCEPTED,
+    INVALID_CREDENTIALS,
     VALIDATION_FAILED,
     VERIFICATION_CODE_INVALID,
     BusinessError,
@@ -25,17 +28,37 @@ MAX_NICKNAME_LENGTH = 30
 MAX_AVATAR_BYTES = 10 * 1024 * 1024
 ALLOWED_AVATAR_TYPES = {"image/jpeg", "image/png", "image/webp"}
 
-OPERATOR_OPENID = "openid_operator_001"
+# 运营账户 id 固定，跨进程可复现（等价不可预测标识）。
+OPERATOR_USER_ID = "018c0000-0000-7000-8000-0000000000aa"
 
 _EMAIL_RE = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
+
+
+def seed_operator() -> None:
+    password_hash = bcrypt.hashpw(OPERATOR_PASSWORD.encode("utf-8"), bcrypt.gensalt()).decode("utf-8")
+    _store.seed_operator(OPERATOR_USER_ID, OPERATOR_USERNAME, password_hash)
+
+
+seed_operator()
 
 
 def login(code: str) -> tuple[str, bool]:
     """登录，返回 (token, agreement_accepted)。"""
     openid = code2session_openid(code)
-    role = "OPERATOR" if openid == OPERATOR_OPENID else "USER"
-    user = _store.find_by_openid(openid, role)
+    user = _store.find_by_openid(openid, "USER")
     return issue_token(user.id), user.agreement_accepted
+
+
+def operator_login(username: str, password: str) -> str:
+    """运营账号密码登录：按用户名查找、bcrypt 校验、签发 JWT。"""
+    user = _store.find_by_username(username)
+    if (
+        user is None
+        or user.password_hash is None
+        or not bcrypt.checkpw(password.encode("utf-8"), user.password_hash.encode("utf-8"))
+    ):
+        raise BusinessError(INVALID_CREDENTIALS)
+    return issue_token(user.id)
 
 
 def current_user(user_id: str) -> UserAccount | None:

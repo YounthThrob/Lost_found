@@ -16,6 +16,8 @@ class UserAccount:
     school_id: str | None = None
     campus_id: str | None = None
     role: str = "USER"
+    username: str | None = None
+    password_hash: str | None = None
     verification_status: str = "SELF_DECLARED"
     verified_email: str | None = None
     email_verified_at: str | None = None
@@ -36,6 +38,7 @@ class InMemoryUserStore:
 
     def __init__(self):
         self._by_openid: dict[str, UserAccount] = {}
+        self._by_username: dict[str, UserAccount] = {}
 
     def find_by_openid(self, openid: str, role: str = "USER") -> UserAccount:
         user = self._by_openid.get(openid)
@@ -44,8 +47,24 @@ class InMemoryUserStore:
             self._by_openid[openid] = user
         return user
 
+    def seed_operator(self, user_id: str, username: str, password_hash: str) -> None:
+        self._by_username[username] = UserAccount(
+            id=user_id,
+            openid="",
+            status="ACTIVE",
+            role="OPERATOR",
+            username=username,
+            password_hash=password_hash,
+        )
+
+    def find_by_username(self, username: str) -> UserAccount | None:
+        return self._by_username.get(username)
+
     def find_by_id(self, user_id: str) -> UserAccount | None:
         for user in self._by_openid.values():
+            if user.id == user_id:
+                return user
+        for user in self._by_username.values():
             if user.id == user_id:
                 return user
         return None

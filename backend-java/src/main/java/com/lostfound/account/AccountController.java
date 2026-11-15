@@ -31,6 +31,9 @@ public class AccountController {
     public record LoginRequest(String code) {
     }
 
+    public record OperatorLoginRequest(String username, String password) {
+    }
+
     public record ProfileUpdate(String nickname) {
     }
 
@@ -56,6 +59,12 @@ public class AccountController {
         return Envelope.ok(Map.of(
             "token", result.token(),
             "agreementAccepted", result.agreementAccepted()));
+    }
+
+    @PostMapping("/session/operator")
+    public Envelope.Response<Map<String, Object>> operatorLogin(@RequestBody OperatorLoginRequest request) {
+        String token = accountService.operatorLogin(request.username(), request.password());
+        return Envelope.ok(Map.of("token", token));
     }
 
     @GetMapping("/me")

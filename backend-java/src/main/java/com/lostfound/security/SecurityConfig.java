@@ -22,7 +22,7 @@ public class SecurityConfig {
             .csrf(csrf -> csrf.disable())
             .sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .authorizeHttpRequests(auth -> auth
-                .requestMatchers("/api/v1/session/wechat").permitAll()
+                .requestMatchers("/api/v1/session/wechat", "/api/v1/session/operator").permitAll()
                 .requestMatchers("/media/**").permitAll()
                 .requestMatchers(HttpMethod.GET, "/api/v1/posts", "/api/v1/posts/{postId}", "/api/v1/stats").permitAll()
                 .anyRequest().authenticated())

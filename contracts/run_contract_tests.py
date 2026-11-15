@@ -185,6 +185,9 @@ EXPECTED = {
     "bookmark_delete": {"status": 200},
     "bookmark_list_after_delete": {"status": 200, "total": 0},
     "bookmark_delete_idempotent": {"status": 200},
+    "operator_login": {"status": 200, "has_token": True},
+    "operator_login_bad_password": {"status": 401, "error_code": "INVALID_CREDENTIALS"},
+    "operator_login_bad_username": {"status": 401, "error_code": "INVALID_CREDENTIALS"},
     "operator_non_operator_denied": {"status": 403, "error_code": "OPERATOR_REQUIRED"},
     "operator_remove": {"status": 200, "post_status": "REMOVED"},
     "operator_remove_hidden": {"status": 200, "removed_visible": False},
@@ -1209,9 +1212,27 @@ def probe(base: str) -> dict:
     }
 
     # ---- operations-management ----
-    operator_token = httpx.post(base + "/api/v1/session/wechat", json={"code": "operator-code"}) \
-        .json()["data"]["token"]
+    op_login = httpx.post(base + "/api/v1/session/operator", json={"username": "admin", "password": "admin123"})
+    operator_token = op_login.json().get("data", {}).get("token", "")
     operator_headers = {"Authorization": "Bearer " + operator_token}
+    sig["operator_login"] = {
+        "status": op_login.status_code,
+        "has_token": bool(operator_token),
+    }
+
+    op_bad_pw = httpx.post(base + "/api/v1/session/operator",
+                           json={"username": "admin", "password": "wrong-password"})
+    sig["operator_login_bad_password"] = {
+        "status": op_bad_pw.status_code,
+        "error_code": op_bad_pw.json().get("error", {}).get("code"),
+    }
+
+    op_bad_user = httpx.post(base + "/api/v1/session/operator",
+                             json={"username": "no-such-operator", "password": "admin123"})
+    sig["operator_login_bad_username"] = {
+        "status": op_bad_user.status_code,
+        "error_code": op_bad_user.json().get("error", {}).get("code"),
+    }
 
     # ---- campus request & review ----
     rca1 = httpx.post(base + f"/api/v1/directory/schools/{school_id}/campuses", headers=headers,

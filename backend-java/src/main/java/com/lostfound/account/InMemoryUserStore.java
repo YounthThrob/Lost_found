@@ -15,6 +15,7 @@ import java.util.concurrent.ConcurrentHashMap;
 public class InMemoryUserStore {
 
     private final Map<String, UserAccount> byOpenid = new ConcurrentHashMap<>();
+    private final Map<String, UserAccount> byUsername = new ConcurrentHashMap<>();
 
     public UserAccount findByOpenid(String openid) {
         return findByOpenid(openid, "USER");
@@ -23,11 +24,27 @@ public class InMemoryUserStore {
     public UserAccount findByOpenid(String openid, String role) {
         return byOpenid.computeIfAbsent(openid,
             o -> new UserAccount(UUID.randomUUID().toString(), o, "ACTIVE", null, null, null, role,
-                "SELF_DECLARED", null, null, null, null));
+                null, null, "SELF_DECLARED", null, null, null, null));
+    }
+
+    public void seedOperator(String userId, String username, String passwordHash) {
+        byUsername.put(username, new UserAccount(userId, "", "ACTIVE", null, null, null, "OPERATOR",
+            username, passwordHash, "SELF_DECLARED", null, null, null, null));
+    }
+
+    public UserAccount findByUsername(String username) {
+        return byUsername.get(username);
     }
 
     public UserAccount findById(String id) {
-        return byOpenid.values().stream()
+        UserAccount user = byOpenid.values().stream()
+            .filter(u -> u.id().equals(id))
+            .findFirst()
+            .orElse(null);
+        if (user != null) {
+            return user;
+        }
+        return byUsername.values().stream()
             .filter(u -> u.id().equals(id))
             .findFirst()
             .orElse(null);
@@ -43,6 +60,7 @@ public class InMemoryUserStore {
         }
         UserAccount updated = new UserAccount(user.id(), user.openid(), user.status(),
             Instant.now().toString(), user.schoolId(), user.campusId(), user.role(),
+            user.username(), user.passwordHash(),
             user.verificationStatus(), user.verifiedEmail(), user.emailVerifiedAt(),
             user.nickname(), user.avatarKey());
         byOpenid.put(user.openid(), updated);
@@ -56,6 +74,7 @@ public class InMemoryUserStore {
         }
         UserAccount updated = new UserAccount(user.id(), user.openid(), user.status(),
             user.agreementAcceptedAt(), schoolId, campusId, user.role(),
+            user.username(), user.passwordHash(),
             user.verificationStatus(), user.verifiedEmail(), user.emailVerifiedAt(),
             user.nickname(), user.avatarKey());
         byOpenid.put(user.openid(), updated);
@@ -69,6 +88,7 @@ public class InMemoryUserStore {
         }
         UserAccount updated = new UserAccount(user.id(), user.openid(), user.status(),
             user.agreementAcceptedAt(), user.schoolId(), user.campusId(), user.role(),
+            user.username(), user.passwordHash(),
             "EMAIL_VERIFIED", email, Instant.now().toString(),
             user.nickname(), user.avatarKey());
         byOpenid.put(user.openid(), updated);
@@ -82,6 +102,7 @@ public class InMemoryUserStore {
         }
         UserAccount updated = new UserAccount(user.id(), user.openid(), user.status(),
             user.agreementAcceptedAt(), user.schoolId(), user.campusId(), user.role(),
+            user.username(), user.passwordHash(),
             user.verificationStatus(), user.verifiedEmail(), user.emailVerifiedAt(),
             nickname, avatarKey);
         byOpenid.put(user.openid(), updated);
@@ -103,6 +124,7 @@ public class InMemoryUserStore {
         }
         UserAccount updated = new UserAccount(user.id(), user.openid(), status,
             user.agreementAcceptedAt(), user.schoolId(), user.campusId(), user.role(),
+            user.username(), user.passwordHash(),
             user.verificationStatus(), user.verifiedEmail(), user.emailVerifiedAt(),
             user.nickname(), user.avatarKey());
         byOpenid.put(user.openid(), updated);
@@ -112,5 +134,6 @@ public class InMemoryUserStore {
     /** 仅供测试重置状态。 */
     public void clear() {
         byOpenid.clear();
+        byUsername.clear();
     }
 }

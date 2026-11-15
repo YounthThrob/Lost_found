@@ -25,6 +25,7 @@ LOST_BODY = {
 @pytest.fixture(autouse=True)
 def fresh_stores():
     account_service._store = InMemoryUserStore()
+    account_service.seed_operator()
     listing_service._store = InMemoryItemPostStore()
     moderation_service._store = InMemoryReportStore()
     operations_service._store = InMemoryAuditStore()
@@ -33,6 +34,10 @@ def fresh_stores():
 
 def _login_token(code: str) -> str:
     return client.post("/api/v1/session/wechat", json={"code": code}).json()["data"]["token"]
+
+
+def _operator_token() -> str:
+    return client.post("/api/v1/session/operator", json={"username": "admin", "password": "admin123"}).json()["data"]["token"]
 
 
 def _confirmed_token(code: str) -> str:
@@ -72,7 +77,7 @@ def test_non_operator_rejected():
 
 
 def test_operator_removes_published_post_and_hides_from_search():
-    operator = _login_token("operator-code")
+    operator = _operator_token()
     owner = _confirmed_token("valid-code")
     post_id = _create_published_post(owner)
 
@@ -90,7 +95,7 @@ def test_operator_removes_published_post_and_hides_from_search():
 
 
 def test_operator_remove_nonexistent_returns_404():
-    operator = _login_token("operator-code")
+    operator = _operator_token()
 
     resp = client.post(
         "/api/v1/admin/posts/nonexistent/remove",
@@ -102,7 +107,7 @@ def test_operator_remove_nonexistent_returns_404():
 
 
 def test_operator_remove_nonpublic_returns_409():
-    operator = _login_token("operator-code")
+    operator = _operator_token()
     owner = _confirmed_token("valid-code")
     post_id = _create_published_post(owner)
     client.post(f"/api/v1/posts/{post_id}/close", headers=_headers(owner))
@@ -117,7 +122,7 @@ def test_operator_remove_nonpublic_returns_409():
 
 
 def test_operator_restrict_then_blocked_from_publish_and_unrestrict():
-    operator = _login_token("operator-code")
+    operator = _operator_token()
     target = _confirmed_token("valid-code-2")
     target_id = _user_id(target)
 
@@ -146,7 +151,7 @@ def test_operator_restrict_then_blocked_from_publish_and_unrestrict():
 
 
 def test_operator_restrict_nonexistent_returns_404():
-    operator = _login_token("operator-code")
+    operator = _operator_token()
 
     resp = client.post(
         "/api/v1/admin/users/nonexistent/restrict",
@@ -158,7 +163,7 @@ def test_operator_restrict_nonexistent_returns_404():
 
 
 def test_operator_list_all_reports():
-    operator = _login_token("operator-code")
+    operator = _operator_token()
     reporter = _confirmed_token("valid-code-2")
     client.post(
         "/api/v1/reports",
@@ -173,7 +178,7 @@ def test_operator_list_all_reports():
 
 
 def test_operator_actions_write_audit_events():
-    operator = _login_token("operator-code")
+    operator = _operator_token()
     owner = _confirmed_token("valid-code")
     post_id = _create_published_post(owner)
 
@@ -191,7 +196,7 @@ def test_operator_actions_write_audit_events():
 
 
 def test_operator_action_empty_reason_returns_422():
-    operator = _login_token("operator-code")
+    operator = _operator_token()
 
     resp = client.post(
         "/api/v1/admin/users/some-user/restrict",

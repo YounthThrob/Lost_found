@@ -12,6 +12,11 @@ class LoginRequest(BaseModel):
     code: str
 
 
+class OperatorLoginRequest(BaseModel):
+    username: str
+    password: str
+
+
 class ProfileUpdate(BaseModel):
     nickname: str
 
@@ -38,6 +43,12 @@ def _profile_view(user) -> dict:
 def login(request: LoginRequest):
     token, agreement_accepted = service.login(request.code)
     return envelope({"token": token, "agreementAccepted": agreement_accepted})
+
+
+@router.post("/session/operator")
+def operator_login(request: OperatorLoginRequest):
+    token = service.operator_login(request.username, request.password)
+    return envelope({"token": token})
 
 
 @router.get("/me")

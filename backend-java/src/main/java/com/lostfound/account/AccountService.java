@@ -7,6 +7,9 @@ import com.lostfound.security.JwtService;
 import com.lostfound.shared.BusinessException;
 import com.lostfound.shared.ErrorCode;
 import com.lostfound.storage.Storage;
+import jakarta.annotation.PostConstruct;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.util.Set;
@@ -24,7 +27,8 @@ public class AccountService {
     private static final int MAX_AVATAR_BYTES = 10 * 1024 * 1024;
     private static final Set<String> ALLOWED_AVATAR_TYPES = Set.of("image/jpeg", "image/png", "image/webp");
 
-    private static final String OPERATOR_OPENID = "openid_operator_001";
+    // 运营账户 id 固定，跨进程可复现（等价不可预测标识）。
+    private static final String OPERATOR_USER_ID = "018c0000-0000-7000-8000-0000000000aa";
 
     private static final Pattern EMAIL_PATTERN = Pattern.compile("^[^@\\s]+@[^@\\s]+\\.[^@\\s]+$");
 
@@ -34,6 +38,13 @@ public class AccountService {
     private final VerificationProvider verificationProvider;
     private final Storage storage;
     private final DirectoryService directoryService;
+    private final BCryptPasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
+
+    @Value("${operator.username}")
+    private String operatorUsername;
+
+    @Value("${operator.password}")
+    private String operatorPassword;
 
     public AccountService(WechatClient wechatClient, InMemoryUserStore userStore, JwtService jwtService,
                           VerificationProvider verificationProvider, Storage storage,
@@ -46,11 +57,25 @@ public class AccountService {
         this.directoryService = directoryService;
     }
 
+    /** 启动时种子运营账户；测试重置用户存储后亦可调用重建。 */
+    @PostConstruct
+    public void seedOperator() {
+        userStore.seedOperator(OPERATOR_USER_ID, operatorUsername, passwordEncoder.encode(operatorPassword));
+    }
+
     public LoginResult login(String code) {
         String openid = wechatClient.code2sessionOpenid(code);
-        String role = OPERATOR_OPENID.equals(openid) ? "OPERATOR" : "USER";
-        UserAccount user = userStore.findByOpenid(openid, role);
+        UserAccount user = userStore.findByOpenid(openid, "USER");
         return new LoginResult(jwtService.issue(user.id()), user.agreementAccepted());
+    }
+
+    public String operatorLogin(String username, String password) {
+        UserAccount user = userStore.findByUsername(username);
+        if (user == null || user.passwordHash() == null
+            || !passwordEncoder.matches(password, user.passwordHash())) {
+            throw new BusinessException(ErrorCode.INVALID_CREDENTIALS);
+        }
+        return jwtService.issue(user.id());
     }
 
     public UserAccount currentUser(String userId) {

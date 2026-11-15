@@ -12,6 +12,10 @@ WECHAT_MOCK = _bool(os.environ.get("WECHAT_MOCK"), True)
 WECHAT_APPID = os.environ.get("WECHAT_APPID", "")
 WECHAT_SECRET = os.environ.get("WECHAT_SECRET", "")
 
+# 运营账号（仅用于运营账号密码登录；密码仅以 bcrypt 哈希存储）。
+OPERATOR_USERNAME = os.environ.get("OPERATOR_USERNAME", "admin")
+OPERATOR_PASSWORD = os.environ.get("OPERATOR_PASSWORD", "admin123")
+
 # JWT 会话配置。HS256 要求密钥长度 >= 32 字节。
 JWT_SECRET = os.environ.get("JWT_SECRET", "dev-only-secret-key-please-change-0123456789")
 JWT_TTL_SECONDS = int(os.environ.get("JWT_TTL_SECONDS", "7200"))
