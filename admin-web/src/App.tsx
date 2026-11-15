@@ -1,70 +1,77 @@
 import { useState } from "react";
-import { Layout, Menu, Typography } from "antd";
 import Login from "./pages/Login";
 import Reports from "./pages/Reports";
 import Actions from "./pages/Actions";
 import Audit from "./pages/Audit";
+import Icon from "./components/Icons";
 import { clearToken, getToken } from "./api";
 
-const { Header, Sider, Content } = Layout;
+type TabKey = "reports" | "actions" | "audit";
 
-const MENU = [
-  { key: "reports", label: "举报处理" },
-  { key: "actions", label: "用户与信息处理" },
-  { key: "audit", label: "审计日志" },
+const MENU: Array<{ key: TabKey; label: string; caption: string; icon: "report" | "action" | "audit" }> = [
+  { key: "reports", label: "举报处理", caption: "REPORT QUEUE", icon: "report" },
+  { key: "actions", label: "用户与信息处理", caption: "CONTROL DESK", icon: "action" },
+  { key: "audit", label: "审计日志", caption: "AUDIT TRACE", icon: "audit" },
 ];
+
+const PAGE_META: Record<TabKey, { title: string; subtitle: string; index: string }> = {
+  reports: { title: "举报处理", subtitle: "REPORT INTAKE / TRIAGE / RESOLUTION", index: "QUEUE / 01" },
+  actions: { title: "用户与信息处理", subtitle: "CONTROLLED ACTIONS / TWO-PART CONFIRMATION", index: "CONTROL DESK / 02" },
+  audit: { title: "审计日志", subtitle: "IMMUTABLE OPERATOR TRACE / READ ONLY", index: "AUDIT TRACE / 03" },
+};
 
 export default function App() {
   const [token, setToken] = useState<string>(getToken());
-  const [tab, setTab] = useState("reports");
+  const [tab, setTab] = useState<TabKey>("reports");
 
-  if (!token) {
-    return <Login onLogin={setToken} />;
-  }
+  if (!token) return <Login onLogin={setToken} />;
 
   const logout = () => {
     clearToken();
     setToken("");
   };
 
+  const meta = PAGE_META[tab];
   return (
-    <Layout style={{ minHeight: "100vh" }}>
-      <Sider breakpoint="lg" collapsedWidth="0">
-        <div style={{ color: "#fff", padding: "16px", fontWeight: 600, fontSize: 16 }}>
-          运营后台
+    <div className="admin-shell">
+      <aside className="admin-sidebar">
+        <div className="sidebar-accent" />
+        <div className="brand-block">
+          <div className="brand-cn">拾光</div>
+          <div className="brand-en">OPERATIONS LEDGER</div>
         </div>
-        <div style={{ color: "rgba(255,255,255,0.6)", padding: "0 16px 16px", fontSize: 12 }}>
-          非官方平台内部工具
+        <div className="sidebar-rule" />
+        <nav className="sidebar-nav" aria-label="运营后台导航">
+          {MENU.map((item) => (
+            <button key={item.key} className={`nav-item ${tab === item.key ? "active" : ""}`} onClick={() => setTab(item.key)}>
+              <Icon name={item.icon} className="nav-icon" />
+              <span><strong>{item.label}</strong><small>{item.caption}</small></span>
+            </button>
+          ))}
+        </nav>
+        <div className="sidebar-foot">
+          <div className="micro-label">PRIVATE / INTERNAL</div>
+          <div className="sidebar-note">非官方平台运营工具</div>
+          <div className="system-status"><i /> SYSTEM ONLINE</div>
         </div>
-        <Menu
-          theme="dark"
-          mode="inline"
-          selectedKeys={[tab]}
-          items={MENU}
-          onClick={(e) => setTab(e.key)}
-        />
-      </Sider>
-      <Layout>
-        <Header
-          style={{
-            background: "#fff",
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "center",
-            paddingInline: 24,
-          }}
-        >
-          <Typography.Title level={4} style={{ margin: 0 }}>
-            校园失物招领 · 运营管理
-          </Typography.Title>
-          <a onClick={logout}>退出登录</a>
-        </Header>
-        <Content style={{ margin: 24 }}>
+      </aside>
+
+      <main className="admin-main">
+        <header className="admin-header">
+          <div><h1>{meta.title}</h1><div className="header-subtitle">{meta.subtitle}</div></div>
+          <div className="operator-area">
+            <span className="operator-code">OPERATOR / 01</span>
+            <span className="operator-avatar">OP</span>
+            <button className="logout-button" onClick={logout} title="退出登录"><Icon name="logout" /></button>
+          </div>
+        </header>
+        <section className="workspace">
+          <div className="page-index">{meta.index}</div>
           {tab === "reports" && <Reports />}
           {tab === "actions" && <Actions />}
           {tab === "audit" && <Audit />}
-        </Content>
-      </Layout>
-    </Layout>
+        </section>
+      </main>
+    </div>
   );
 }
