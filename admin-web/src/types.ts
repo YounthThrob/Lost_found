@@ -13,8 +13,10 @@ export interface ItemPostView {
   category: string;
   title: string;
   publicDescription: string;
-  school: string;
-  campus?: string | null;
+  schoolId: string;
+  schoolName: string;
+  campusId?: string | null;
+  campusName?: string | null;
   area?: string | null;
   status: string;
   authorId: string;
