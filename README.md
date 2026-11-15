@@ -108,8 +108,8 @@ flowchart LR
     U[普通用户] --> MP[原生微信小程序]
     O[运营人员] --> AW[React 运营后台]
 
-    MP -->|HTTPS / JSON| API[/api/v1]
-    AW -->|Bearer Token / JSON| API
+    MP -->|HTTPS + JSON| API["/api/v1"]
+    AW -->|Bearer Token + JSON| API
 
     API --> PY[FastAPI 后端 :8000]
     API --> JV[Spring Boot 后端 :8080]
